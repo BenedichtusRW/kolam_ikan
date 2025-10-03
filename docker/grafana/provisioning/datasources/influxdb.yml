@@ -1,0 +1,11 @@
+﻿apiVersion: 1
+
+datasources:
+  - name: InfluxDB
+    type: influxdb
+    access: proxy
+    url: http://influxdb:8086
+    database: kolam_sensors
+    user: kolam_user
+    password: kolam123
+    isDefault: true

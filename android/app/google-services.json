@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "662701231859",
+    "project_id": "kolam-ikan-a8191",
+    "storage_bucket": "kolam-ikan-a8191.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:662701231859:android:0245330fc1923a26663186",
+        "android_client_info": {
+          "package_name": "com.example.kolam_ikan"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCx1jfg4tnLapjHW7qpzifaT1anbeRL_VY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

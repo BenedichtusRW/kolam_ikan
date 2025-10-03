@@ -1,0 +1,97 @@
+// Firestore Security Rules untuk Kolam Ikan IoT
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+             resource.data.role == 'admin';
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && 
+             request.auth.uid == userId;
+    }
+    
+    function isValidUser() {
+      return isAuthenticated() && 
+             (resource.data.role == 'admin' || resource.data.role == 'user');
+    }
+
+    // Users collection - users can read/write their own data, admins can read all
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow write: if isOwner(userId);
+      allow create: if isAuthenticated();
+    }
+
+    // Sensor data - admins can write, all authenticated users can read
+    match /sensor_data/{dataId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+      allow create: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // Control settings - only admins can modify
+    match /control_settings/{settingId} {
+      allow read: if isAuthenticated();
+      allow write, create, delete: if isAdmin();
+    }
+
+    // User reports - users can create and read their own, admins can read/write all
+    match /user_reports/{reportId} {
+      allow read: if isOwner(resource.data.userId) || isAdmin();
+      allow create: if isAuthenticated() && isOwner(request.resource.data.userId);
+      allow update: if isAdmin() || 
+                       (isOwner(resource.data.userId) && 
+                        resource.data.status == 'pending');
+      allow delete: if isAdmin();
+    }
+
+    // Device status and commands - only admins and system
+    match /device_status/{deviceId} {
+      allow read: if isAuthenticated();
+      allow write, create: if isAdmin();
+    }
+
+    match /device_commands/{commandId} {
+      allow read, write, create: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // Alerts - all authenticated users can read, system can write
+    match /alerts/{alertId} {
+      allow read: if isAuthenticated();
+      allow write, create: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // Ponds information - authenticated users can read, admins can modify
+    match /ponds/{pondId} {
+      allow read: if isAuthenticated();
+      allow write, create, delete: if isAdmin();
+    }
+
+    // Devices information - authenticated users can read, admins can modify
+    match /devices/{deviceId} {
+      allow read: if isAuthenticated();
+      allow write, create, delete: if isAdmin();
+    }
+
+    // Analytics data - admins only
+    match /analytics/{docId} {
+      allow read, write, create, delete: if isAdmin();
+    }
+
+    // System logs - admins only
+    match /system_logs/{logId} {
+      allow read, write, create, delete: if isAdmin();
+    }
+  }
+}

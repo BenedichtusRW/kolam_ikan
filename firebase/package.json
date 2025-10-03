@@ -1,0 +1,24 @@
+{
+  "name": "kolam-ikan-firebase-config",
+  "version": "1.0.0",
+  "description": "Firebase configuration for Kolam Ikan IoT project",
+  "main": "firebase-config.js",
+  "scripts": {
+    "setup": "node setup-firebase.js",
+    "deploy-rules": "firebase deploy --only firestore:rules",
+    "deploy-functions": "firebase deploy --only functions",
+    "deploy-all": "firebase deploy",
+    "test-rules": "firebase emulators:start --only firestore",
+    "backup": "node backup-firestore.js"
+  },
+  "dependencies": {
+    "firebase-admin": "^11.11.0",
+    "firebase-tools": "^12.0.0",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "firebase-functions-test": "^3.0.0"
+  },
+  "author": "Kolam Ikan Team",
+  "license": "MIT"
+}

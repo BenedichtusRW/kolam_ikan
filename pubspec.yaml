@@ -38,17 +38,21 @@ dependencies:
   # State Management
   provider: ^6.1.2
   
-  # Firebase
-  firebase_core: ^2.24.2
-  firebase_auth: ^4.15.3
-  cloud_firestore: ^4.13.6
-  firebase_storage: ^11.5.6
+  # Firebase (versi yang sudah stable dan tested)
+  firebase_core: ^2.32.0
+  firebase_auth: ^4.16.0
+  cloud_firestore: ^4.17.5
+  firebase_storage: ^11.7.7
+  
+  # Social Authentication
+  google_sign_in: ^6.2.1
+  flutter_facebook_auth: ^7.1.0
   
   # Charts for data visualization
-  fl_chart: ^0.66.2
+  fl_chart: ^1.1.0
   
   # Date/time formatting
-  intl: ^0.19.0
+  intl: ^0.20.2
   
   # MQTT for IoT communication
   mqtt_client: ^10.2.0
@@ -60,16 +64,17 @@ dependencies:
   # Image handling
   image_picker: ^1.0.5
   cached_network_image: ^3.3.0
+  flutter_svg: ^2.0.9
   
   # Local storage
   shared_preferences: ^2.2.2
   
   # Permission handling
-  permission_handler: ^11.1.0
+  permission_handler: ^12.0.1
   
   # Charts & gauges
-  syncfusion_flutter_charts: ^24.1.41
-  syncfusion_flutter_gauges: ^24.1.41
+  syncfusion_flutter_charts: ^31.1.19
+  syncfusion_flutter_gauges: ^31.1.19
   
   # UI Components
   shimmer: ^3.0.0
@@ -84,7 +89,7 @@ dev_dependencies:
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
-  flutter_lints: ^5.0.0
+  flutter_lints: ^6.0.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -98,9 +103,8 @@ flutter:
   uses-material-design: true
 
   # To add assets to your application, add an assets section, like this:
-  # assets:
-  #   - images/a_dot_burr.jpeg
-  #   - images/a_dot_ham.jpeg
+  assets:
+    - assets/images/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../providers/auth_provider.dart';
 import '../../utils/routes.dart';
 
@@ -37,6 +38,50 @@ class _LoginScreenState extends State<LoginScreen> {
         );
         Navigator.pushReplacementNamed(context, homeRoute);
       }
+    }
+  }
+
+  void _signInWithGoogle() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    
+    bool success = await authProvider.signInWithGoogle();
+
+    if (success && mounted) {
+      // Navigate based on user role
+      if (authProvider.userProfile?.isAdmin == true) {
+        Navigator.pushReplacementNamed(context, Routes.adminDashboard);
+      } else {
+        Navigator.pushReplacementNamed(context, Routes.userDashboard);
+      }
+    } else if (mounted && authProvider.errorMessage != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(authProvider.errorMessage!),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  void _signInWithFacebook() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    
+    bool success = await authProvider.signInWithFacebook();
+
+    if (success && mounted) {
+      // Navigate based on user role
+      if (authProvider.userProfile?.isAdmin == true) {
+        Navigator.pushReplacementNamed(context, Routes.adminDashboard);
+      } else {
+        Navigator.pushReplacementNamed(context, Routes.userDashboard);
+      }
+    } else if (mounted && authProvider.errorMessage != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(authProvider.errorMessage!),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -91,7 +136,11 @@ class _LoginScreenState extends State<LoginScreen> {
                           if (value == null || value.isEmpty) {
                             return 'Email tidak boleh kosong';
                           }
-                          if (!value.contains('@')) {
+                          // Regex pattern untuk validasi email yang lebih akurat
+                          final emailRegex = RegExp(
+                            r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+                          );
+                          if (!emailRegex.hasMatch(value.trim())) {
                             return 'Format email tidak valid';
                           }
                           return null;
@@ -196,12 +245,192 @@ class _LoginScreenState extends State<LoginScreen> {
                           return SizedBox.shrink();
                         },
                       ),
+
+                      SizedBox(height: 24),
+
+                      // Divider
+                      Row(
+                        children: [
+                          Expanded(child: Divider(color: Colors.grey[400])),
+                          Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 16),
+                            child: Text(
+                              'atau masuk dengan',
+                              style: TextStyle(color: Colors.grey[600]),
+                            ),
+                          ),
+                          Expanded(child: Divider(color: Colors.grey[400])),
+                        ],
+                      ),
+
+                      SizedBox(height: 24),
+
+                      // Social Login Buttons
+                      Consumer<AuthProvider>(
+                        builder: (context, authProvider, child) {
+                          return Column(
+                            children: [
+                              // Google Sign In Button
+                              SizedBox(
+                                width: double.infinity,
+                                child: OutlinedButton.icon(
+                                  onPressed: authProvider.isLoading ? null : _signInWithGoogle,
+                                  icon: SvgPicture.asset(
+                                    'assets/images/google_logo.svg',
+                                    height: 20,
+                                    width: 20,
+                                  ),
+                                  label: Text('Masuk dengan Google'),
+                                  style: OutlinedButton.styleFrom(
+                                    padding: EdgeInsets.symmetric(vertical: 12),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              
+                              SizedBox(height: 12),
+                              
+                              // Facebook Sign In Button
+                              SizedBox(
+                                width: double.infinity,
+                                child: OutlinedButton.icon(
+                                  onPressed: authProvider.isLoading ? null : _signInWithFacebook,
+                                  icon: Icon(
+                                    Icons.facebook,
+                                    color: Color(0xFF1877F2),
+                                  ),
+                                  label: Text('Masuk dengan Facebook'),
+                                  style: OutlinedButton.styleFrom(
+                                    padding: EdgeInsets.symmetric(vertical: 12),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+
+                      SizedBox(height: 32),
+
+                      // Signup Link
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Belum punya akun? ',
+                            style: TextStyle(color: Colors.grey[600]),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              Navigator.pushNamed(context, Routes.signup);
+                            },
+                            child: Text(
+                              'Daftar Sekarang',
+                              style: TextStyle(
+                                color: Colors.blue[600],
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      // Development Login Hints
+                      Container(
+                        margin: EdgeInsets.only(top: 24),
+                        padding: EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.blue[50],
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.blue[200]!),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(Icons.info_outline, color: Colors.blue[600], size: 20),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Login untuk Testing',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.blue[800],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: 12),
+                            _buildLoginHint('Admin', 'admin@kolamikan.com', 'admin123'),
+                            SizedBox(height: 8),
+                            _buildLoginHint('User', 'user@kolamikan.com', 'user123'),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                 ),
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoginHint(String role, String email, String password) {
+    return GestureDetector(
+      onTap: () {
+        _emailController.text = email;
+        _passwordController.text = password;
+      },
+      child: Container(
+        padding: EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(color: Colors.blue[100]!),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.person, color: Colors.blue[600], size: 16),
+            SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    role,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                      color: Colors.blue[800],
+                    ),
+                  ),
+                  Text(
+                    email,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.blue[600],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Text(
+              'Tap to use',
+              style: TextStyle(
+                fontSize: 10,
+                color: Colors.blue[500],
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
         ),
       ),
     );

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 
 // Providers
 import 'providers/auth_provider.dart';
@@ -13,12 +14,16 @@ import 'utils/routes.dart';
 
 // Screens
 import 'screens/login/login_screen.dart';
+import 'screens/dashboard/admin_dashboard_screen.dart';
+import 'screens/dashboard/user_dashboard_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
   // Initialize Firebase
-  await Firebase.initializeApp();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   
   runApp(const MyApp());
 }
@@ -64,11 +69,13 @@ class MyApp extends StatelessWidget {
         onGenerateRoute: Routes.generateRoute,
         home: Consumer<AuthProvider>(
           builder: (context, authProvider, child) {
-            // TODO: Implement proper authentication flow
             if (authProvider.isLoggedIn) {
               // Navigate to appropriate dashboard based on user role
-              // For now, just return LoginScreen since Firebase is not configured yet
-              return LoginScreen();
+              if (authProvider.userProfile?.isAdmin == true) {
+                return AdminDashboardScreen();
+              } else {
+                return UserDashboardScreen();
+              }
             }
             return LoginScreen();
           },

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">kolam_ikan</string>
+
+    <!-- Facebook credentials -->
+    <string name="facebook_app_id">807840568395340</string>
+    <string name="facebook_client_token">69de99ce9556a082e19c01b96db7a21c</string>
+    <string name="fb_login_protocol_scheme">fb807840568395340</string>
+</resources>

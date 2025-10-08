@@ -1,26 +1,44 @@
 {
   "project_info": {
-    "project_number": "662701231859",
-    "project_id": "kolam-ikan-a8191",
-    "storage_bucket": "kolam-ikan-a8191.firebasestorage.app"
+    "project_number": "685083671333",
+    "project_id": "kolam-ikan-project",
+    "storage_bucket": "kolam-ikan-project.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:662701231859:android:0245330fc1923a26663186",
+        "mobilesdk_app_id": "1:685083671333:android:128e62df10ff5f2813b8cc",
         "android_client_info": {
           "package_name": "com.example.kolam_ikan"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "685083671333-jv1j4fmp2dhm8ct6aeu8ur2s00hjbjrv.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.kolam_ikan",
+            "certificate_hash": "71cf5ce82545efd6d9d78e0734c7fb34d4864c63"
+          }
+        },
+        {
+          "client_id": "685083671333-vo8hr9uf67s3ui3i774t5p6p81fvhh66.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
-          "current_key": "AIzaSyCx1jfg4tnLapjHW7qpzifaT1anbeRL_VY"
+          "current_key": "AIzaSyDErG_NUlPZjED5zDhWUzPKyFkkusp4PqM"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "685083671333-vo8hr9uf67s3ui3i774t5p6p81fvhh66.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

@@ -1,0 +1,23 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="1024" height="1024" fill="#2196F3" rx="150"/>
+  
+  <!-- Fish Icon -->
+  <g transform="translate(200, 300)">
+    <!-- Fish Body -->
+    <ellipse cx="300" cy="200" rx="250" ry="120" fill="#FFFFFF"/>
+    
+    <!-- Fish Tail -->
+    <path d="M50 200 L150 150 L150 250 Z" fill="#FFFFFF"/>
+    
+    <!-- Fish Eye -->
+    <circle cx="450" cy="170" r="25" fill="#2196F3"/>
+    
+    <!-- Water Waves -->
+    <path d="M100 350 Q200 320 300 350 T500 350" stroke="#FFFFFF" stroke-width="8" fill="none"/>
+    <path d="M150 380 Q250 350 350 380 T550 380" stroke="#FFFFFF" stroke-width="6" fill="none"/>
+  </g>
+  
+  <!-- App Name -->
+  <text x="512" y="750" text-anchor="middle" font-family="Arial, sans-serif" font-size="80" font-weight="bold" fill="#FFFFFF">KOLAM IKAN</text>
+</svg>

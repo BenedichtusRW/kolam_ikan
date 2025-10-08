@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="1024" height="1024" fill="#2196F3" rx="200"/>
+  
+  <!-- Fish pond icon -->
+  <circle cx="512" cy="400" r="200" fill="#4FC3F7" stroke="#FFFFFF" stroke-width="8"/>
+  
+  <!-- Fish -->
+  <ellipse cx="450" cy="380" rx="40" ry="20" fill="#FF9800"/>
+  <ellipse cx="570" cy="420" rx="35" ry="18" fill="#FF5722"/>
+  
+  <!-- Water waves -->
+  <path d="M 312 500 Q 412 480 512 500 T 712 500" stroke="#FFFFFF" stroke-width="6" fill="none"/>
+  <path d="M 312 530 Q 412 510 512 530 T 712 530" stroke="#FFFFFF" stroke-width="4" fill="none"/>
+  
+  <!-- Title -->
+  <text x="512" y="700" font-family="Arial, sans-serif" font-size="80" font-weight="bold" text-anchor="middle" fill="#FFFFFF">KOLAM</text>
+  <text x="512" y="800" font-family="Arial, sans-serif" font-size="80" font-weight="bold" text-anchor="middle" fill="#FFFFFF">IKAN</text>
+</svg>

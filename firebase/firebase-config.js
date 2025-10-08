@@ -4,13 +4,12 @@
 const firebaseConfig = {
   // Web/Flutter Configuration
   web: {
-    apiKey: "your-api-key",
-    authDomain: "your-project.firebaseapp.com",
-    projectId: "your-project-id",
-    storageBucket: "your-project.appspot.com",
-    messagingSenderId: "123456789",
-    appId: "1:123456789:web:abcdef123456",
-    measurementId: "G-XXXXXXXXXX"
+    apiKey: "AIzaSyBvOiF8oaEP32-your-api-key",
+    authDomain: "kolam-ikan-project.firebaseapp.com",
+    projectId: "kolam-ikan-project",
+    storageBucket: "kolam-ikan-project.appspot.com",
+    messagingSenderId: "685083671333",
+    appId: "1:685083671333:android:your-app-id",
   },
 
   // Admin SDK Configuration (untuk Node.js backend)

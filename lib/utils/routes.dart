@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../screens/login/login_screen.dart';
+import '../screens/auth/signup_screen.dart';
 import '../screens/dashboard/user_dashboard_screen.dart';
 import '../screens/dashboard/admin_dashboard_screen.dart';
 import '../screens/history/history_screen.dart';
@@ -8,6 +9,7 @@ import '../screens/settings/control_settings_screen.dart';
 class Routes {
   // Route names
   static const String login = '/login';
+  static const String signup = '/signup';
   static const String userDashboard = '/user-dashboard';
   static const String adminDashboard = '/admin-dashboard';
   static const String history = '/history';
@@ -19,6 +21,12 @@ class Routes {
       case login:
         return MaterialPageRoute(
           builder: (_) => LoginScreen(),
+          settings: settings,
+        );
+
+      case signup:
+        return MaterialPageRoute(
+          builder: (_) => SignupScreen(),
           settings: settings,
         );
 

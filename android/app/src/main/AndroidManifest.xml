@@ -25,25 +25,6 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
-        </activity> 
-            android:value="@string/facebook_client_token"/>
-            
-        <!-- Facebook Login Activity -->
-        <activity 
-            android:name="com.facebook.FacebookActivity"
-            android:configChanges="keyboard|keyboardHidden|screenLayout|screenSize|orientation"
-            android:label="@string/app_name" />
-            
-        <!-- Custom Tab Activity for Facebook Login -->
-        <activity
-            android:name="com.facebook.CustomTabActivity"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="@string/fb_login_protocol_scheme" />
-            </intent-filter>
         </activity>
 
         <!-- Don't delete the meta-data below.
@@ -62,9 +43,5 @@
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
         </intent>
-        
-        <!-- Facebook package visibility for Android 11+ -->
-        <package android:name="com.facebook.katana" />
-        <package android:name="com.facebook.orca" />
     </queries>
 </manifest>

@@ -244,15 +244,6 @@ class AuthProvider with ChangeNotifier {
     return false;
   }
 
-  // Facebook Sign In Method
-  Future<bool> signInWithFacebook() async {
-    _isLoading = true;
-    _errorMessage = null;
-    notifyListeners();
-
-    return false;
-  }
-
   // Google Sign Out
   Future<void> signOutGoogle() async {
     await _googleSignIn.signOut();

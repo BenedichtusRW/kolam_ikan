@@ -46,7 +46,6 @@ dependencies:
   
   # Social Authentication
   google_sign_in: ^6.2.1
-  flutter_facebook_auth: ^7.1.0
   
   # Charts for data visualization
   fl_chart: ^1.1.0

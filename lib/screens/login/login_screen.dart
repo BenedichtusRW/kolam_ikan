@@ -63,28 +63,6 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  void _signInWithFacebook() async {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    
-    bool success = await authProvider.signInWithFacebook();
-
-    if (success && mounted) {
-      // Navigate based on user role
-      if (authProvider.userProfile?.isAdmin == true) {
-        Navigator.pushReplacementNamed(context, Routes.adminDashboard);
-      } else {
-        Navigator.pushReplacementNamed(context, Routes.userDashboard);
-      }
-    } else if (mounted && authProvider.errorMessage != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(authProvider.errorMessage!),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -291,25 +269,6 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                               
                               SizedBox(height: 12),
-                              
-                              // Facebook Sign In Button
-                              SizedBox(
-                                width: double.infinity,
-                                child: OutlinedButton.icon(
-                                  onPressed: authProvider.isLoading ? null : _signInWithFacebook,
-                                  icon: Icon(
-                                    Icons.facebook,
-                                    color: Color(0xFF1877F2),
-                                  ),
-                                  label: Text('Masuk dengan Facebook'),
-                                  style: OutlinedButton.styleFrom(
-                                    padding: EdgeInsets.symmetric(vertical: 12),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                  ),
-                                ),
-                              ),
                             ],
                           );
                         },

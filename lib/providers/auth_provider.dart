@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import '../models/user_profile.dart';
 
 class AuthProvider with ChangeNotifier {
@@ -251,56 +250,6 @@ class AuthProvider with ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
 
-    try {
-      final LoginResult result = await FacebookAuth.instance.login();
-
-      if (result.status == LoginStatus.success) {
-        final OAuthCredential facebookAuthCredential = 
-            FacebookAuthProvider.credential(result.accessToken!.tokenString);
-
-        UserCredential userCredential = 
-            await _auth.signInWithCredential(facebookAuthCredential);
-
-        if (userCredential.user != null) {
-          // Check if user exists in Firestore, if not create profile
-          DocumentSnapshot doc = await _firestore
-              .collection('users')
-              .doc(userCredential.user!.uid)
-              .get();
-
-          if (!doc.exists) {
-            // Get Facebook user data
-            final userData = await FacebookAuth.instance.getUserData();
-            
-            // Create new user profile for Facebook sign-in
-            UserProfile userProfile = UserProfile(
-              uid: userCredential.user!.uid,
-              email: userCredential.user!.email ?? userData['email'] ?? '',
-              name: userCredential.user!.displayName ?? userData['name'] ?? 'Facebook User',
-              role: 'user', // Default role for Facebook users
-              pondId: 'pond_001', // Default pond assignment
-            );
-
-            await _firestore
-                .collection('users')
-                .doc(userCredential.user!.uid)
-                .set(userProfile.toMap());
-          }
-
-          await _loadUserProfile(userCredential.user!.uid);
-          _isLoading = false;
-          notifyListeners();
-          return true;
-        }
-      } else {
-        _errorMessage = 'Facebook Sign-In dibatalkan';
-      }
-    } catch (e) {
-      _errorMessage = 'Facebook Sign-In gagal: ${e.toString()}';
-    }
-
-    _isLoading = false;
-    notifyListeners();
     return false;
   }
 
@@ -309,17 +258,11 @@ class AuthProvider with ChangeNotifier {
     await _googleSignIn.signOut();
   }
 
-  // Facebook Sign Out  
-  Future<void> signOutFacebook() async {
-    await FacebookAuth.instance.logOut();
-  }
-
   // Enhanced logout that handles all sign-in methods
   Future<void> logout() async {
     try {
       await _auth.signOut();
       await signOutGoogle();
-      await signOutFacebook();
       _userProfile = null;
       _errorMessage = null;
       notifyListeners();

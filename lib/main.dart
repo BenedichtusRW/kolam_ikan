@@ -65,7 +65,7 @@ class MyApp extends StatelessWidget {
             ),
           ),
         ),
-        initialRoute: Routes.login,
+        initialRoute: Routes.splash,
         onGenerateRoute: Routes.generateRoute,
         home: Consumer<AuthProvider>(
           builder: (context, authProvider, child) {

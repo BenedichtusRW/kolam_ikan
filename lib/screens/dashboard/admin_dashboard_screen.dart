@@ -14,7 +14,7 @@ class AdminDashboardScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text('Dashboard Admin'),
-        backgroundColor: Colors.green[600],
+        backgroundColor: Colors.blue[600],
         foregroundColor: Colors.white,
         actions: [
           IconButton(
@@ -62,7 +62,7 @@ class AdminDashboardScreen extends StatelessWidget {
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12),
                         gradient: LinearGradient(
-                          colors: [Colors.green[400]!, Colors.green[600]!],
+                          colors: [Colors.blue[400]!, Colors.blue[600]!],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
@@ -126,7 +126,7 @@ class AdminDashboardScreen extends StatelessWidget {
                               Icon(
                                 Icons.air,
                                 color: dashboardProvider.isAeratorOn 
-                                  ? Colors.green[600] 
+                                  ? Colors.blue[600] 
                                   : Colors.grey[600],
                                 size: 32,
                               ),
@@ -146,7 +146,7 @@ class AdminDashboardScreen extends StatelessWidget {
                                       dashboardProvider.isAeratorOn ? 'Aktif' : 'Tidak Aktif',
                                       style: TextStyle(
                                         color: dashboardProvider.isAeratorOn 
-                                          ? Colors.green[600] 
+                                          ? Colors.blue[600] 
                                           : Colors.grey[600],
                                         fontSize: 14,
                                       ),
@@ -161,7 +161,7 @@ class AdminDashboardScreen extends StatelessWidget {
                                   : (value) {
                                       dashboardProvider.toggleAerator(value);
                                     },
-                                activeColor: Colors.green[600],
+                                activeColor: Colors.blue[600],
                               ),
                             ],
                           ),
@@ -173,7 +173,7 @@ class AdminDashboardScreen extends StatelessWidget {
                               Icon(
                                 Icons.restaurant,
                                 color: dashboardProvider.isFeederOn 
-                                  ? Colors.orange[600] 
+                                  ? Colors.blue[600] 
                                   : Colors.grey[600],
                                 size: 32,
                               ),
@@ -193,7 +193,7 @@ class AdminDashboardScreen extends StatelessWidget {
                                       dashboardProvider.isFeederOn ? 'Aktif' : 'Tidak Aktif',
                                       style: TextStyle(
                                         color: dashboardProvider.isFeederOn 
-                                          ? Colors.orange[600] 
+                                          ? Colors.blue[600] 
                                           : Colors.grey[600],
                                         fontSize: 14,
                                       ),
@@ -208,7 +208,7 @@ class AdminDashboardScreen extends StatelessWidget {
                                   : (value) {
                                       dashboardProvider.toggleFeeder(value);
                                     },
-                                activeColor: Colors.orange[600],
+                                activeColor: Colors.blue[600],
                               ),
                             ],
                           ),
@@ -335,14 +335,14 @@ class AdminDashboardScreen extends StatelessWidget {
     if (temperature == null) return Colors.grey;
     if (temperature < 24 || temperature > 30) return Colors.red;
     if (temperature < 26 || temperature > 28) return Colors.orange;
-    return Colors.green;
+    return Colors.blue;
   }
 
   Color _getOxygenColor(double? oxygen) {
     if (oxygen == null) return Colors.grey;
     if (oxygen < 4) return Colors.red;
     if (oxygen < 6) return Colors.orange;
-    return Colors.green;
+    return Colors.blue;
   }
 
   String _formatDateTime(DateTime dateTime) {

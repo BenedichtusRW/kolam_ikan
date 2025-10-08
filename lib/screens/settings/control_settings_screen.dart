@@ -10,7 +10,7 @@ class ControlSettingsScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text('Pengaturan Kontrol'),
-        backgroundColor: Colors.orange[600],
+        backgroundColor: Colors.blue[600],
         foregroundColor: Colors.white,
       ),
       body: Consumer<DashboardProvider>(
@@ -32,7 +32,7 @@ class ControlSettingsScreen extends StatelessWidget {
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(12),
                       gradient: LinearGradient(
-                        colors: [Colors.orange[400]!, Colors.orange[600]!],
+                        colors: [Colors.blue[400]!, Colors.blue[600]!],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
@@ -111,7 +111,7 @@ class ControlSettingsScreen extends StatelessWidget {
                           'Mengontrol sistem pemberian pakan otomatis',
                           Icons.restaurant,
                           dashboardProvider.isFeederOn,
-                          Colors.orange,
+                          Colors.blue,
                           (value) => dashboardProvider.toggleFeeder(value),
                           dashboardProvider.isLoading,
                         ),

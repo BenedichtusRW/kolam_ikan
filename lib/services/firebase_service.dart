@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/sensor_data.dart';
 import '../models/control_settings.dart';
-import '../models/user_report.dart';
 
 class FirebaseService {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -9,7 +8,6 @@ class FirebaseService {
   // Collections
   static const String SENSOR_DATA = 'sensor_data';
   static const String CONTROL_SETTINGS = 'control_settings';
-  static const String USER_REPORTS = 'user_reports';
   static const String PONDS = 'ponds';
   static const String DEVICES = 'devices';
 
@@ -130,76 +128,6 @@ class FirebaseService {
           }
           return null;
         });
-  }
-
-  // ========== USER REPORTS ==========
-
-  /// Submit user report
-  static Future<String?> submitUserReport(UserReport report) async {
-    try {
-      final docRef = await _firestore.collection(USER_REPORTS).add(report.toMap());
-      return docRef.id;
-    } catch (e) {
-      print('Error submitting user report: $e');
-      return null;
-    }
-  }
-
-  /// Get user reports (for admin)
-  static Stream<List<UserReport>> getUserReportsStream({
-    ReportStatus? status,
-    Priority? priority,
-    String? pondId,
-  }) {
-    Query query = _firestore.collection(USER_REPORTS);
-
-    if (status != null) {
-      query = query.where('status', isEqualTo: status.toString().split('.').last);
-    }
-    if (priority != null) {
-      query = query.where('priority', isEqualTo: priority.toString().split('.').last);
-    }
-    if (pondId != null) {
-      query = query.where('pondId', isEqualTo: pondId);
-    }
-
-    return query
-        .orderBy('reportTime', descending: true)
-        .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => UserReport.fromMap(doc.data() as Map<String, dynamic>, doc.id))
-            .toList());
-  }
-
-  /// Update report status (admin action)
-  static Future<bool> updateReportStatus(
-    String reportId,
-    ReportStatus status, {
-    String? adminResponse,
-    String? adminId,
-  }) async {
-    try {
-      Map<String, dynamic> updateData = {
-        'status': status.toString().split('.').last,
-        'updatedAt': DateTime.now().millisecondsSinceEpoch,
-      };
-
-      if (adminResponse != null) {
-        updateData['adminResponse'] = adminResponse;
-      }
-      if (adminId != null) {
-        updateData['assignedAdminId'] = adminId;
-      }
-      if (status == ReportStatus.resolved) {
-        updateData['resolvedAt'] = DateTime.now().millisecondsSinceEpoch;
-      }
-
-      await _firestore.collection(USER_REPORTS).doc(reportId).update(updateData);
-      return true;
-    } catch (e) {
-      print('Error updating report status: $e');
-      return false;
-    }
   }
 
   // ========== DEVICE MANAGEMENT ==========

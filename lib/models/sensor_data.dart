@@ -3,6 +3,7 @@ class SensorData {
   final double temperature; // Celsius
   final double oxygen; // mg/L atau %
   final double phLevel; // pH level (6-9 normal range)
+  final double turbidity; // NTU (Nephelometric Turbidity Units)
   final DateTime timestamp;
   final String pondId;
   final String deviceId;
@@ -13,6 +14,7 @@ class SensorData {
     required this.temperature,
     required this.oxygen,
     required this.phLevel,
+    required this.turbidity,
     required this.timestamp,
     required this.pondId,
     required this.deviceId,
@@ -26,6 +28,7 @@ class SensorData {
       temperature: map['temperature']?.toDouble() ?? 0.0,
       oxygen: map['oxygen']?.toDouble() ?? 0.0,
       phLevel: map['phLevel']?.toDouble() ?? 7.0,
+      turbidity: map['turbidity']?.toDouble() ?? 0.0,
       timestamp: DateTime.fromMillisecondsSinceEpoch(map['timestamp'] ?? 0),
       pondId: map['pondId'] ?? '',
       deviceId: map['deviceId'] ?? '',
@@ -39,6 +42,7 @@ class SensorData {
       'temperature': temperature,
       'oxygen': oxygen,
       'phLevel': phLevel,
+      'turbidity': turbidity,
       'timestamp': timestamp.millisecondsSinceEpoch,
       'pondId': pondId,
       'deviceId': deviceId,
@@ -50,8 +54,9 @@ class SensorData {
   bool get isTemperatureNormal => temperature >= 20.0 && temperature <= 30.0;
   bool get isOxygenNormal => oxygen >= 5.0; // mg/L minimum for fish
   bool get isPhNormal => phLevel >= 6.5 && phLevel <= 8.5;
+  bool get isTurbidityNormal => turbidity <= 5.0; // NTU, lower is clearer
   
-  bool get isAllNormal => isTemperatureNormal && isOxygenNormal && isPhNormal;
+  bool get isAllNormal => isTemperatureNormal && isOxygenNormal && isPhNormal && isTurbidityNormal;
 
   // Get status color for UI
   String get temperatureStatus {
@@ -70,5 +75,11 @@ class SensorData {
     if (phLevel < 6.5) return 'acidic';
     if (phLevel > 8.5) return 'alkaline';
     return 'normal';
+  }
+
+  String get turbidityStatus {
+    if (turbidity > 10) return 'murky';
+    if (turbidity > 5) return 'cloudy';
+    return 'clear';
   }
 }

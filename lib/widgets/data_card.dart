@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:syncfusion_flutter_gauges/gauges.dart';
 
 class DataCard extends StatelessWidget {
   final String title;
@@ -18,6 +19,40 @@ class DataCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Parse value untuk gauge calculation
+    double numericValue = double.tryParse(value) ?? 0.0;
+    
+    // Tentukan range berdasarkan jenis sensor
+    double minValue = 0.0;
+    double maxValue = 100.0;
+    List<GaugeRange> ranges = [];
+    
+    if (title.contains('Suhu')) {
+      minValue = 20.0;
+      maxValue = 35.0;
+      ranges = [
+        GaugeRange(startValue: 20, endValue: 25, color: Colors.blue.shade300),
+        GaugeRange(startValue: 25, endValue: 32, color: Colors.green),
+        GaugeRange(startValue: 32, endValue: 35, color: Colors.red.shade400),
+      ];
+    } else if (title.contains('pH')) {
+      minValue = 6.0;
+      maxValue = 9.0;
+      ranges = [
+        GaugeRange(startValue: 6.0, endValue: 6.5, color: Colors.red.shade400),
+        GaugeRange(startValue: 6.5, endValue: 8.5, color: Colors.green),
+        GaugeRange(startValue: 8.5, endValue: 9.0, color: Colors.red.shade400),
+      ];
+    } else if (title.contains('Oksigen')) {
+      minValue = 0.0;
+      maxValue = 12.0;
+      ranges = [
+        GaugeRange(startValue: 0, endValue: 5, color: Colors.red.shade400),
+        GaugeRange(startValue: 5, endValue: 7, color: Colors.orange),
+        GaugeRange(startValue: 7, endValue: 12, color: Colors.blue),
+      ];
+    }
+    
     return Card(
       elevation: 4,
       shape: RoundedRectangleBorder(
@@ -66,29 +101,66 @@ class DataCard extends StatelessWidget {
                 ),
               ],
             ),
-            SizedBox(height: 12),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.baseline,
-              textBaseline: TextBaseline.alphabetic,
-              children: [
-                Text(
-                  value,
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: color,
+            SizedBox(height: 16),
+            
+            // Gauge Speedometer untuk User Dashboard
+            Container(
+              height: 120,
+              child: SfRadialGauge(
+                axes: <RadialAxis>[
+                  RadialAxis(
+                    minimum: minValue,
+                    maximum: maxValue,
+                    showLabels: true,
+                    showTicks: true,
+                    axisLabelStyle: GaugeTextStyle(fontSize: 10),
+                    majorTickStyle: MajorTickStyle(length: 6),
+                    minorTickStyle: MinorTickStyle(length: 3),
+                    ranges: ranges,
+                    pointers: <GaugePointer>[
+                      // Jarum penunjuk
+                      NeedlePointer(
+                        value: numericValue,
+                        needleLength: 0.7,
+                        needleStartWidth: 1,
+                        needleEndWidth: 3,
+                        needleColor: Colors.grey[800],
+                        knobStyle: KnobStyle(
+                          knobRadius: 0.05,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                    annotations: <GaugeAnnotation>[
+                      // Nilai di tengah gauge
+                      GaugeAnnotation(
+                        widget: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              '$value',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: color,
+                              ),
+                            ),
+                            Text(
+                              unit,
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                        angle: 90,
+                        positionFactor: 0.75,
+                      ),
+                    ],
                   ),
-                ),
-                SizedBox(width: 4),
-                Text(
-                  unit,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.grey[600],
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),

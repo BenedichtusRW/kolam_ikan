@@ -251,15 +251,38 @@ class AuthProvider with ChangeNotifier {
 
   // Enhanced logout that handles all sign-in methods
   Future<void> logout() async {
+    _isLoading = true;
+    notifyListeners();
+    
     try {
+      // Sign out from Google if signed in
+      if (await _googleSignIn.isSignedIn()) {
+        await _googleSignIn.signOut();
+        print('Signed out from Google');
+      }
+      
+      // Sign out from Firebase
       await _auth.signOut();
-      await signOutGoogle();
+      print('Signed out from Firebase');
+      
+      // Clear user profile and error state
       _userProfile = null;
       _errorMessage = null;
+      _isLoading = false;
+      
+      print('Logout completed successfully');
       notifyListeners();
     } catch (e) {
-      _errorMessage = e.toString();
+      print('Error during logout: $e');
+      _errorMessage = 'Error during logout: ${e.toString()}';
+      _isLoading = false;
       notifyListeners();
+      rethrow; // Re-throw to handle in UI
     }
+  }
+
+  // Alias for logout
+  Future<void> signOut() async {
+    await logout();
   }
 }

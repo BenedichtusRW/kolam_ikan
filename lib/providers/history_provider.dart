@@ -1,8 +1,11 @@
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/sensor_data.dart';
+import '../utils/mock_data_generator.dart';
 
 class HistoryProvider with ChangeNotifier {
+  // Testing mode
+  bool _isTestingMode = false;
 
   List<SensorData> _historyData = [];
   DateTime? _selectedDate;
@@ -28,15 +31,20 @@ class HistoryProvider with ChangeNotifier {
   double get maxTemperature => _maxTemperature;
   double get minOxygen => _minOxygen;
   double get maxOxygen => _maxOxygen;
+  bool get isTestingMode => _isTestingMode;
 
   Future<void> fetchHistoryData(DateTime date, String pondId) async {
+    if (_isTestingMode) {
+      return fetchMockHistoryData(date, pondId);
+    }
+    
+    // Original implementation untuk real data
     _isLoading = true;
     _selectedDate = date;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      // TODO: Fetch data history berdasarkan tanggal dari Firestore
       DateTime startDate = DateTime(date.year, date.month, date.day);
       DateTime endDate = startDate.add(Duration(days: 1));
 
@@ -105,4 +113,49 @@ class HistoryProvider with ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
   }
+
+  // Testing Mode Methods
+  void enableTestingMode() {
+    _isTestingMode = true;
+    notifyListeners();
+    print('History testing mode enabled');
+  }
+
+  void disableTestingMode() {
+    _isTestingMode = false;
+    notifyListeners();
+    print('History testing mode disabled');
+  }
+
+  Future<void> fetchMockHistoryData(DateTime date, String pondId) async {
+    _isLoading = true;
+    _selectedDate = date;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      // Simulate loading delay
+      await Future.delayed(Duration(milliseconds: 500));
+      
+      // Generate mock data untuk tanggal yang dipilih
+      _historyData = MockDataGenerator.generateDailyMockData(
+        date: date,
+        pondId: pondId,
+        dataPointsPerHour: 6, // Data setiap 10 menit
+      );
+      
+      _calculateStatistics();
+      _isLoading = false;
+      notifyListeners();
+      
+      print('Mock history data loaded for ${date.toString()}: ${_historyData.length} data points');
+      
+    } catch (e) {
+      _errorMessage = 'Failed to load mock data: $e';
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // Override fetch method untuk support testing mode
 }

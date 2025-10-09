@@ -1,21 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'firebase_options.dart';
 
 // Providers
 import 'providers/auth_provider.dart';
 import 'providers/dashboard_provider.dart';
 import 'providers/history_provider.dart';
-import 'providers/reports_provider.dart';
 
 // Utils
 import 'utils/routes.dart';
-
-// Screens
-import 'screens/login/login_screen.dart';
-import 'screens/dashboard/admin_dashboard_screen.dart';
-import 'screens/dashboard/user_dashboard_screen.dart';
+import 'package:flutter/foundation.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -38,11 +34,19 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => DashboardProvider()),
         ChangeNotifierProvider(create: (_) => HistoryProvider()),
-        ChangeNotifierProvider(create: (_) => ReportsProvider()),
       ],
       child: MaterialApp(
         title: 'Kolam Ikan Monitor',
         debugShowCheckedModeBanner: false,
+        localizationsDelegates: [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: [
+          Locale('id', ''), // Bahasa Indonesia
+          Locale('en', ''), // Bahasa Inggris
+        ],
         theme: ThemeData(
           primarySwatch: Colors.blue,
           visualDensity: VisualDensity.adaptivePlatformDensity,
@@ -65,22 +69,9 @@ class MyApp extends StatelessWidget {
             ),
           ),
         ),
-        initialRoute: Routes.splash,
         onGenerateRoute: Routes.generateRoute,
-        home: Consumer<AuthProvider>(
-          builder: (context, authProvider, child) {
-            if (authProvider.isLoggedIn) {
-              // Navigate to appropriate dashboard based on user role
-              if (authProvider.userProfile?.isAdmin == true) {
-                return AdminDashboardScreen();
-              } else {
-                return UserDashboardScreen();
-              }
-            }
-            return LoginScreen();
-          },
-        ),
+        initialRoute: '/',
       ),
     );
   }
-}
+} 

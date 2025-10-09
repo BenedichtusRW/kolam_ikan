@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
-import '../screens/splash/splash_screen.dart';
+import 'package:provider/provider.dart';
+import 'package:flutter/foundation.dart';
 import '../screens/login/login_screen.dart';
 import '../screens/auth/signup_screen.dart';
-import '../screens/dashboard/user_dashboard_screen.dart';
-import '../screens/dashboard/admin_dashboard_screen.dart';
+import '../screens/navigation/main_navigation_screen.dart';
+import '../screens/navigation/admin_main_navigation_screen.dart';
+import '../screens/dashboard/user_web_dashboard_screen.dart';
 import '../screens/history/history_screen.dart';
 import '../screens/settings/control_settings_screen.dart';
+import '../providers/auth_provider.dart';
 
 class Routes {
   // Route names
@@ -19,10 +22,29 @@ class Routes {
 
   // Generate routes
   static Route<dynamic> generateRoute(RouteSettings settings) {
+    print('Generating route for: ${settings.name}'); // Debug line
     switch (settings.name) {
       case splash:
         return MaterialPageRoute(
-          builder: (_) => SplashScreen(),
+          builder: (context) => Consumer<AuthProvider>(
+            builder: (context, authProvider, child) {
+              if (authProvider.isLoggedIn) {
+                // Navigate to appropriate dashboard based on user role and platform
+                if (authProvider.userProfile?.isAdmin == true) {
+                  // Admin users get the same navigation interface
+                  return AdminMainNavigationScreen();
+                } else {
+                  // Regular users get different interface based on platform  
+                  if (kIsWeb) {
+                    return UserWebDashboardScreen();
+                  } else {
+                    return MainNavigationScreen();
+                  }
+                }
+              }
+              return LoginScreen();
+            },
+          ),
           settings: settings,
         );
 
@@ -40,13 +62,13 @@ class Routes {
 
       case userDashboard:
         return MaterialPageRoute(
-          builder: (_) => UserDashboardScreen(),
+          builder: (_) => MainNavigationScreen(),
           settings: settings,
         );
 
       case adminDashboard:
         return MaterialPageRoute(
-          builder: (_) => AdminDashboardScreen(),
+          builder: (_) => AdminMainNavigationScreen(),
           settings: settings,
         );
 

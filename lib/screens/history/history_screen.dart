@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:fl_chart/fl_chart.dart';
 import '../../providers/history_provider.dart';
 import '../../providers/auth_provider.dart';
 
@@ -10,6 +11,7 @@ class HistoryScreen extends StatefulWidget {
 
 class _HistoryScreenState extends State<HistoryScreen> {
   DateTime? _selectedDate;
+  String _selectedChartType = 'temperature'; // Default chart type
 
   @override
   void initState() {
@@ -49,7 +51,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Riwayat Data'),
-        backgroundColor: Colors.indigo[600],
+        backgroundColor: const Color.fromARGB(255, 57, 73, 171),
         foregroundColor: Colors.white,
       ),
       body: Consumer<HistoryProvider>(
@@ -71,7 +73,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       children: [
                         Icon(
                           Icons.calendar_today,
-                          color: Colors.indigo[600],
+                          color: const Color.fromARGB(255, 57, 73, 171),
                           size: 24,
                         ),
                         SizedBox(width: 12),
@@ -102,7 +104,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         ElevatedButton(
                           onPressed: _selectDate,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.indigo[600],
+                            backgroundColor: const Color.fromARGB(255, 57, 73, 171),
                             foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
@@ -124,7 +126,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation(Colors.indigo[600]),
+                            valueColor: AlwaysStoppedAnimation(const Color.fromARGB(255, 57, 73, 171)),
                           ),
                           SizedBox(height: 16),
                           Text('Memuat data riwayat...'),
@@ -273,9 +275,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           ),
                           SizedBox(height: 20),
 
-                          // Chart placeholder
+                          // Grafik Tren Data Historis sesuai requirement dosen
                           Text(
-                            'Grafik Tren',
+                            'Grafik Tren Data Historis',
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
@@ -283,53 +285,66 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           ),
                           SizedBox(height: 12),
 
+                          // Chart dengan fl_chart - implementasi sesuai requirement dosen
                           Card(
                             elevation: 4,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Container(
-                              height: 250,
+                              height: 300,
                               width: double.infinity,
                               padding: EdgeInsets.all(16),
                               child: Column(
                                 children: [
-                                  Expanded(
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        color: Colors.grey[100],
-                                        borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(color: Colors.grey[300]!),
-                                      ),
-                                      child: Center(
-                                        child: Column(
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          children: [
-                                            Icon(
-                                              Icons.show_chart,
-                                              size: 48,
-                                              color: Colors.grey[400],
-                                            ),
-                                            SizedBox(height: 8),
-                                            Text(
-                                              'TODO: Implementasi Chart dengan fl_chart',
-                                              style: TextStyle(
-                                                color: Colors.grey[600],
-                                                fontSize: 14,
-                                              ),
-                                            ),
-                                            SizedBox(height: 4),
-                                            Text(
-                                              '${historyProvider.historyData.length} data points',
-                                              style: TextStyle(
-                                                color: Colors.grey[500],
-                                                fontSize: 12,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
+                                  // Chart selector tabs
+                                  Container(
+                                    height: 40,
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey[200],
+                                      borderRadius: BorderRadius.circular(8),
                                     ),
+                                    child: Row(
+                                      children: [
+                                        _buildChartTab('Suhu', _selectedChartType == 'temperature'),
+                                        _buildChartTab('pH', _selectedChartType == 'ph'),
+                                        _buildChartTab('Oksigen', _selectedChartType == 'oxygen'),
+                                      ],
+                                    ),
+                                  ),
+                                  SizedBox(height: 16),
+                                  
+                                  // Chart area
+                                  Expanded(
+                                    child: historyProvider.historyData.isNotEmpty 
+                                      ? _buildLineChart(historyProvider)
+                                      : Container(
+                                          decoration: BoxDecoration(
+                                            color: Colors.grey[100],
+                                            borderRadius: BorderRadius.circular(8),
+                                            border: Border.all(color: Colors.grey[300]!),
+                                          ),
+                                          child: Center(
+                                            child: Column(
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              children: [
+                                                Icon(
+                                                  Icons.show_chart,
+                                                  size: 48,
+                                                  color: Colors.grey[400],
+                                                ),
+                                                SizedBox(height: 8),
+                                                Text(
+                                                  'Pilih tanggal untuk melihat grafik',
+                                                  style: TextStyle(
+                                                    color: Colors.grey[600],
+                                                    fontSize: 14,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
                                   ),
                                 ],
                               ),
@@ -423,5 +438,210 @@ class _HistoryScreenState extends State<HistoryScreen> {
     ];
     
     return '${date.day} ${months[date.month - 1]} ${date.year}';
+  }
+
+  // Method untuk membuat tab selector chart
+  Widget _buildChartTab(String label, bool isSelected) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            switch (label) {
+              case 'Suhu':
+                _selectedChartType = 'temperature';
+                break;
+              case 'pH':
+                _selectedChartType = 'ph';
+                break;
+              case 'Oksigen':
+                _selectedChartType = 'oxygen';
+                break;
+            }
+          });
+        },
+        child: Container(
+          margin: EdgeInsets.all(2),
+          decoration: BoxDecoration(
+            color: isSelected ? const Color.fromARGB(255, 57, 73, 171) : Colors.transparent,
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Center(
+            child: Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? Colors.white : Colors.grey[600],
+                fontSize: 12,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Method untuk membuat line chart dengan fl_chart
+  Widget _buildLineChart(HistoryProvider provider) {
+    if (provider.historyData.isEmpty) {
+      return Center(
+        child: Text(
+          'Tidak ada data untuk ditampilkan',
+          style: TextStyle(color: Colors.grey[600]),
+        ),
+      );
+    }
+
+    // Prepare data points based on selected chart type
+    List<FlSpot> spots = [];
+    Color lineColor = Colors.blue;
+    String yAxisLabel = '';
+    double minY = 0, maxY = 100;
+
+    switch (_selectedChartType) {
+      case 'temperature':
+        lineColor = Colors.orange;
+        yAxisLabel = '°C';
+        minY = 20;
+        maxY = 35;
+        for (int i = 0; i < provider.historyData.length; i++) {
+          final data = provider.historyData[i];
+          final hour = data.timestamp.hour + (data.timestamp.minute / 60.0);
+          spots.add(FlSpot(hour, data.temperature));
+        }
+        break;
+      case 'ph':
+        lineColor = const Color.fromARGB(255, 57, 73, 171);
+        yAxisLabel = 'pH';
+        minY = 6.0;
+        maxY = 8.5;
+        for (int i = 0; i < provider.historyData.length; i++) {
+          final data = provider.historyData[i];
+          final hour = data.timestamp.hour + (data.timestamp.minute / 60.0);
+          spots.add(FlSpot(hour, data.phLevel));
+        }
+        break;
+      case 'oxygen':
+        lineColor = Colors.green;
+        yAxisLabel = 'mg/L';
+        minY = 0;
+        maxY = 15;
+        for (int i = 0; i < provider.historyData.length; i++) {
+          final data = provider.historyData[i];
+          final hour = data.timestamp.hour + (data.timestamp.minute / 60.0);
+          spots.add(FlSpot(hour, data.oxygen));
+        }
+        break;
+    }
+
+    return LineChart(
+      LineChartData(
+        gridData: FlGridData(
+          show: true,
+          drawHorizontalLine: true,
+          drawVerticalLine: true,
+          getDrawingHorizontalLine: (value) => FlLine(
+            color: Colors.grey[300]!,
+            strokeWidth: 1,
+          ),
+          getDrawingVerticalLine: (value) => FlLine(
+            color: Colors.grey[300]!,
+            strokeWidth: 1,
+          ),
+        ),
+        titlesData: FlTitlesData(
+          show: true,
+          rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 30,
+              interval: 2,
+              getTitlesWidget: (double value, TitleMeta meta) {
+                final hour = value.toInt();
+                if (hour >= 8 && hour <= 17) {
+                  return Text(
+                    '${hour.toString().padLeft(2, '0')}:00',
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 10,
+                    ),
+                  );
+                }
+                return Text('');
+              },
+            ),
+          ),
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 40,
+              getTitlesWidget: (double value, TitleMeta meta) {
+                return Text(
+                  value.toStringAsFixed(1),
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 10,
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+        borderData: FlBorderData(
+          show: true,
+          border: Border.all(color: Colors.grey[300]!, width: 1),
+        ),
+        minX: 8, // 8 AM
+        maxX: 17, // 5 PM
+        minY: minY,
+        maxY: maxY,
+        lineBarsData: [
+          LineChartBarData(
+            spots: spots,
+            isCurved: true,
+            color: lineColor,
+            barWidth: 3,
+            isStrokeCapRound: true,
+            dotData: FlDotData(
+              show: true,
+              getDotPainter: (spot, percent, barData, index) {
+                return FlDotCirclePainter(
+                  radius: 4,
+                  color: lineColor,
+                  strokeWidth: 2,
+                  strokeColor: Colors.white,
+                );
+              },
+            ),
+            belowBarData: BarAreaData(
+              show: true,
+              color: lineColor.withOpacity(0.1),
+            ),
+          ),
+        ],
+        lineTouchData: LineTouchData(
+          enabled: true,
+          touchTooltipData: LineTouchTooltipData(
+            getTooltipColor: (touchedSpot) => Colors.black87,
+            getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
+              return touchedBarSpots.map((barSpot) {
+                final flSpot = barSpot;
+                final hour = flSpot.x.toInt();
+                final minute = ((flSpot.x - hour) * 60).toInt();
+                return LineTooltipItem(
+                  '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}\n${flSpot.y.toStringAsFixed(2)} $yAxisLabel',
+                  TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                );
+              }).toList();
+            },
+          ),
+        ),
+      ),
+    );
   }
 }

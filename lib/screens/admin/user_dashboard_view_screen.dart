@@ -6,6 +6,9 @@ import 'package:path_provider/path_provider.dart';
 import 'package:excel/excel.dart';
 import 'dart:io';
 import 'dart:math';
+import 'dart:typed_data';
+import 'dart:convert';
+import 'package:flutter/services.dart';
 import '../../providers/dashboard_provider.dart';
 
 class UserDashboardViewScreen extends StatefulWidget {
@@ -23,7 +26,8 @@ class UserDashboardViewScreen extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<UserDashboardViewScreen> createState() => _UserDashboardViewScreenState();
+  State<UserDashboardViewScreen> createState() =>
+      _UserDashboardViewScreenState();
 }
 
 class _UserDashboardViewScreenState extends State<UserDashboardViewScreen> {
@@ -31,7 +35,10 @@ class _UserDashboardViewScreenState extends State<UserDashboardViewScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
+      final dashboardProvider = Provider.of<DashboardProvider>(
+        context,
+        listen: false,
+      );
       dashboardProvider.initialize(widget.pondId);
     });
   }
@@ -80,10 +87,7 @@ class _UserDashboardViewScreenState extends State<UserDashboardViewScreen> {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
                   gradient: LinearGradient(
-                    colors: [
-                      Colors.blue[400]!,
-                      Colors.blue[600]!,
-                    ],
+                    colors: [Colors.blue[400]!, Colors.blue[600]!],
                   ),
                 ),
                 child: Row(
@@ -132,7 +136,10 @@ class _UserDashboardViewScreenState extends State<UserDashboardViewScreen> {
                       ),
                     ),
                     Container(
-                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.green,
                         borderRadius: BorderRadius.circular(20),
@@ -150,9 +157,9 @@ class _UserDashboardViewScreenState extends State<UserDashboardViewScreen> {
                 ),
               ),
             ),
-            
+
             SizedBox(height: 24),
-            
+
             // Kondisi Terkini Section - Same as user dashboard
             Text(
               'Kondisi Terkini - ${widget.pondName}',
@@ -163,12 +170,12 @@ class _UserDashboardViewScreenState extends State<UserDashboardViewScreen> {
               ),
             ),
             SizedBox(height: 16),
-            
+
             // Sensor Data Cards dengan Gauge Speedometer - Copy dari Admin Dashboard yang sukses
             Consumer<DashboardProvider>(
               builder: (context, dashboardProvider, child) {
                 final sensorData = dashboardProvider.currentSensorData;
-                
+
                 return Column(
                   children: [
                     Row(
@@ -176,7 +183,9 @@ class _UserDashboardViewScreenState extends State<UserDashboardViewScreen> {
                         Expanded(
                           child: _buildSensorCard(
                             'Suhu Air',
-                            (sensorData?.temperature ?? 24.5).toStringAsFixed(1),
+                            (sensorData?.temperature ?? 24.5).toStringAsFixed(
+                              1,
+                            ),
                             '°C',
                             Icons.thermostat,
                             Colors.orange,
@@ -208,18 +217,16 @@ class _UserDashboardViewScreenState extends State<UserDashboardViewScreen> {
                         ),
                         SizedBox(width: 12),
                         // Empty space to maintain layout
-                        Expanded(
-                          child: SizedBox(),
-                        ),
+                        Expanded(child: SizedBox()),
                       ],
                     ),
                   ],
                 );
               },
             ),
-            
+
             SizedBox(height: 24),
-            
+
             // Status Information
             Card(
               elevation: 2,
@@ -252,9 +259,9 @@ class _UserDashboardViewScreenState extends State<UserDashboardViewScreen> {
                 ),
               ),
             ),
-            
+
             SizedBox(height: 24),
-            
+
             // Admin Notes
             Card(
               elevation: 2,
@@ -266,7 +273,10 @@ class _UserDashboardViewScreenState extends State<UserDashboardViewScreen> {
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.admin_panel_settings, color: Colors.amber[800]),
+                        Icon(
+                          Icons.admin_panel_settings,
+                          color: Colors.amber[800],
+                        ),
                         SizedBox(width: 8),
                         Text(
                           'Catatan Admin',
@@ -302,15 +312,21 @@ class _UserDashboardViewScreenState extends State<UserDashboardViewScreen> {
   }
 
   // Method _buildSensorCard yang sukses dari Admin Dashboard
-  Widget _buildSensorCard(String title, String value, String unit, IconData icon, Color color) {
+  Widget _buildSensorCard(
+    String title,
+    String value,
+    String unit,
+    IconData icon,
+    Color color,
+  ) {
     // Parse value untuk gauge calculation
     double numericValue = double.tryParse(value) ?? 0.0;
-    
+
     // Tentukan range berdasarkan jenis sensor
     double minValue = 0.0;
     double maxValue = 100.0;
     List<GaugeRange> ranges = [];
-    
+
     if (title.contains('Suhu')) {
       minValue = 20.0;
       maxValue = 35.0;
@@ -336,7 +352,7 @@ class _UserDashboardViewScreenState extends State<UserDashboardViewScreen> {
         GaugeRange(startValue: 7, endValue: 12, color: Colors.blue),
       ];
     }
-    
+
     return Card(
       elevation: 2,
       child: Padding(
@@ -361,7 +377,7 @@ class _UserDashboardViewScreenState extends State<UserDashboardViewScreen> {
               ],
             ),
             SizedBox(height: 16),
-            
+
             // Gauge Speedometer - Sama seperti di Admin Dashboard!
             Container(
               height: 120,
@@ -421,9 +437,9 @@ class _UserDashboardViewScreenState extends State<UserDashboardViewScreen> {
                 ],
               ),
             ),
-            
+
             SizedBox(height: 8),
-            
+
             // Status text
             Center(
               child: Text(
@@ -440,7 +456,7 @@ class _UserDashboardViewScreenState extends State<UserDashboardViewScreen> {
       ),
     );
   }
-  
+
   Color _getStatusColor(String title, double value) {
     if (title.contains('Suhu')) {
       if (value < 25) return Colors.blue;
@@ -456,7 +472,7 @@ class _UserDashboardViewScreenState extends State<UserDashboardViewScreen> {
     }
     return Colors.grey;
   }
-  
+
   String _getStatusText(String title, double value) {
     if (title.contains('Suhu')) {
       if (value < 25) return 'Rendah';
@@ -490,12 +506,7 @@ class _UserDashboardViewScreenState extends State<UserDashboardViewScreen> {
             ),
           ),
           Expanded(
-            child: Text(
-              value,
-              style: TextStyle(
-                color: Colors.grey[800],
-              ),
-            ),
+            child: Text(value, style: TextStyle(color: Colors.grey[800])),
           ),
         ],
       ),
@@ -509,7 +520,10 @@ class _UserDashboardViewScreenState extends State<UserDashboardViewScreen> {
         return AlertDialog(
           title: Row(
             children: [
-              Icon(Icons.download_rounded, color: const Color.fromARGB(255, 57, 73, 171)),
+              Icon(
+                Icons.download_rounded,
+                color: const Color.fromARGB(255, 57, 73, 171),
+              ),
               SizedBox(width: 8),
               Text('Download Laporan'),
             ],
@@ -553,23 +567,50 @@ class _UserDashboardViewScreenState extends State<UserDashboardViewScreen> {
 
   void _generatePDFReport() async {
     try {
-      // Minta permission untuk storage
-      var status = await Permission.storage.status;
-      if (!status.isGranted) {
-        status = await Permission.storage.request();
-        if (!status.isGranted) {
-          _showErrorSnackBar('Akses penyimpanan ditolak. Tidak dapat menyimpan file.');
-          return;
-        }
-      }
-
-      // Tampilkan progress
       _showProgressSnackBar('Membuat laporan PDF...');
 
-      // Simulasi pembuatan PDF (implementasi sesungguhnya membutuhkan package pdf)
-      await Future.delayed(Duration(seconds: 2));
+      // Buat isi PDF sederhana (placeholder). Untuk laporan sesungguhnya, gunakan package `pdf`.
+      final String content =
+          'Laporan Monitoring Kolam Ikan - ${widget.userName}\nKolam: ${widget.pondName}\nTanggal: ${DateTime.now()}\n\n(Ini adalah file PDF placeholder yang berisi teks. Untuk hasil terbaik gunakan package pdf.)';
+      final Uint8List bytes = Uint8List.fromList(utf8.encode(content));
 
-      _showSuccessSnackBar('Laporan PDF berhasil disimpan di folder Downloads');
+      // Nama file
+      String fileName =
+          'Laporan_${widget.userName.replaceAll(' ', '_')}_${DateTime.now().millisecondsSinceEpoch}.pdf';
+
+      final savedPath = await _saveFileBytes(
+        bytes,
+        fileName,
+        preferDownloads: true,
+      );
+      if (savedPath != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text('Laporan PDF berhasil disimpan di: $savedPath'),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 6),
+            action: SnackBarAction(
+              label: 'Salin path',
+              textColor: Colors.white,
+              onPressed: () {
+                Clipboard.setData(ClipboardData(text: savedPath));
+              },
+            ),
+          ),
+        );
+      } else {
+        _showErrorSnackBar(
+          'Gagal menyimpan laporan PDF. Coba berikan izin penyimpanan atau cek pengaturan aplikasi.',
+        );
+      }
     } catch (e) {
       _showErrorSnackBar('Gagal membuat laporan PDF: ${e.toString()}');
     }
@@ -577,17 +618,6 @@ class _UserDashboardViewScreenState extends State<UserDashboardViewScreen> {
 
   void _generateExcelReport() async {
     try {
-      // Minta permission untuk storage
-      var status = await Permission.storage.status;
-      if (!status.isGranted) {
-        status = await Permission.storage.request();
-        if (!status.isGranted) {
-          _showErrorSnackBar('Akses penyimpanan ditolak. Tidak dapat menyimpan file.');
-          return;
-        }
-      }
-
-      // Tampilkan progress
       _showProgressSnackBar('Membuat laporan Excel...');
 
       // Buat Excel file
@@ -595,52 +625,162 @@ class _UserDashboardViewScreenState extends State<UserDashboardViewScreen> {
       Sheet sheetObject = excel['Sheet1'];
 
       // Header
-      sheetObject.cell(CellIndex.indexByString("A1")).value = TextCellValue('Laporan Monitoring Kolam Ikan - ${widget.userName}');
-      sheetObject.cell(CellIndex.indexByString("A2")).value = TextCellValue('Kolam: ${widget.pondName}');
-      sheetObject.cell(CellIndex.indexByString("A3")).value = TextCellValue('Tanggal: ${DateTime.now().toString().split(' ')[0]}');
+      sheetObject.cell(CellIndex.indexByString("A1")).value = TextCellValue(
+        'Laporan Monitoring Kolam Ikan - ${widget.userName}',
+      );
+      sheetObject.cell(CellIndex.indexByString("A2")).value = TextCellValue(
+        'Kolam: ${widget.pondName}',
+      );
+      sheetObject.cell(CellIndex.indexByString("A3")).value = TextCellValue(
+        'Tanggal: ${DateTime.now().toString().split(' ')[0]}',
+      );
 
       // Header data
-      sheetObject.cell(CellIndex.indexByString("A5")).value = TextCellValue('Waktu');
-      sheetObject.cell(CellIndex.indexByString("B5")).value = TextCellValue('Suhu (°C)');
-      sheetObject.cell(CellIndex.indexByString("C5")).value = TextCellValue('pH');
-      sheetObject.cell(CellIndex.indexByString("D5")).value = TextCellValue('Oksigen (ppm)');
+      sheetObject.cell(CellIndex.indexByString("A5")).value = TextCellValue(
+        'Waktu',
+      );
+      sheetObject.cell(CellIndex.indexByString("B5")).value = TextCellValue(
+        'Suhu (°C)',
+      );
+      sheetObject.cell(CellIndex.indexByString("C5")).value = TextCellValue(
+        'pH',
+      );
+      sheetObject.cell(CellIndex.indexByString("D5")).value = TextCellValue(
+        'Oksigen (ppm)',
+      );
 
       // Data dummy (dalam implementasi sesungguhnya, ambil dari database)
       Random random = Random();
       for (int i = 0; i < 24; i++) {
         int row = i + 6;
-        sheetObject.cell(CellIndex.indexByString("A$row")).value = TextCellValue('${DateTime.now().subtract(Duration(hours: 23 - i)).hour.toString().padLeft(2, '0')}:00');
-        sheetObject.cell(CellIndex.indexByString("B$row")).value = TextCellValue((28 + random.nextDouble() * 4).toStringAsFixed(1));
-        sheetObject.cell(CellIndex.indexByString("C$row")).value = TextCellValue((7.0 + random.nextDouble() * 1.5).toStringAsFixed(1));
-        sheetObject.cell(CellIndex.indexByString("D$row")).value = TextCellValue((6 + random.nextDouble() * 2).toStringAsFixed(1));
+        sheetObject
+            .cell(CellIndex.indexByString("A$row"))
+            .value = TextCellValue(
+          '${DateTime.now().subtract(Duration(hours: 23 - i)).hour.toString().padLeft(2, '0')}:00',
+        );
+        sheetObject.cell(CellIndex.indexByString("B$row")).value =
+            TextCellValue((28 + random.nextDouble() * 4).toStringAsFixed(1));
+        sheetObject.cell(CellIndex.indexByString("C$row")).value =
+            TextCellValue((7.0 + random.nextDouble() * 1.5).toStringAsFixed(1));
+        sheetObject.cell(CellIndex.indexByString("D$row")).value =
+            TextCellValue((6 + random.nextDouble() * 2).toStringAsFixed(1));
       }
 
-      // Dapatkan direktori Downloads
-      Directory? downloadsDir;
-      if (Platform.isAndroid) {
-        downloadsDir = Directory('/storage/emulated/0/Download');
-        if (!await downloadsDir.exists()) {
-          downloadsDir = await getExternalStorageDirectory();
-        }
-      } else {
-        downloadsDir = await getApplicationDocumentsDirectory();
+      // Encode excel to bytes
+      final List<int>? encoded = excel.encode();
+      if (encoded == null) {
+        _showErrorSnackBar('Gagal membuat file Excel (encoding error)');
+        return;
       }
 
-      if (downloadsDir != null) {
-        // Nama file dengan timestamp
-        String fileName = 'Laporan_${widget.userName.replaceAll(' ', '_')}_${DateTime.now().millisecondsSinceEpoch}.xlsx';
-        String filePath = '${downloadsDir.path}/$fileName';
-
-        // Simpan file
-        File file = File(filePath);
-        await file.writeAsBytes(excel.encode()!);
-
-        _showSuccessSnackBar('Laporan Excel berhasil disimpan di: $filePath');
+      String fileName =
+          'Laporan_${widget.userName.replaceAll(' ', '_')}_${DateTime.now().millisecondsSinceEpoch}.xlsx';
+      final savedPath = await _saveFileBytes(
+        Uint8List.fromList(encoded),
+        fileName,
+        preferDownloads: true,
+      );
+      if (savedPath != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text('Laporan Excel berhasil disimpan di: $savedPath'),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 6),
+            action: SnackBarAction(
+              label: 'Salin path',
+              textColor: Colors.white,
+              onPressed: () {
+                Clipboard.setData(ClipboardData(text: savedPath));
+              },
+            ),
+          ),
+        );
       } else {
-        _showErrorSnackBar('Tidak dapat menemukan direktori penyimpanan');
+        _showErrorSnackBar(
+          'Gagal menyimpan laporan Excel. Coba berikan izin penyimpanan atau cek pengaturan aplikasi.',
+        );
       }
     } catch (e) {
       _showErrorSnackBar('Gagal membuat laporan Excel: ${e.toString()}');
+    }
+  }
+
+  /// Try to save bytes to Downloads (if allowed) else fallback to app documents directory.
+  /// Returns saved file path or null on failure.
+  Future<String?> _saveFileBytes(
+    Uint8List bytes,
+    String fileName, {
+    bool preferDownloads = true,
+  }) async {
+    try {
+      Directory? targetDir;
+      if (Platform.isAndroid && preferDownloads) {
+        // Try request permission for storage first
+        bool canWriteDownloads = false;
+
+        try {
+          if (await Permission.manageExternalStorage.isGranted) {
+            canWriteDownloads = true;
+          } else if (await Permission.storage.isGranted) {
+            canWriteDownloads = true;
+          } else {
+            // Request storage permission first
+            var status = await Permission.storage.request();
+            if (status.isGranted) {
+              canWriteDownloads = true;
+            } else {
+              // If not granted, try manage external storage (Android 11+)
+              var mgr = await Permission.manageExternalStorage.request();
+              if (mgr.isGranted) canWriteDownloads = true;
+            }
+          }
+        } catch (e) {
+          // Permission check/request might throw on some platforms; ignore and fallback
+          canWriteDownloads = false;
+        }
+
+        if (canWriteDownloads) {
+          try {
+            final downloads = Directory('/storage/emulated/0/Download');
+            if (await downloads.exists()) {
+              targetDir = downloads;
+            } else {
+              // Fallback to external storage dir
+              targetDir = await getExternalStorageDirectory();
+            }
+
+            if (targetDir != null) {
+              final file = File('${targetDir.path}/$fileName');
+              await file.writeAsBytes(bytes);
+              return file.path;
+            }
+          } catch (e) {
+            // failed to write to Downloads; will fallback
+          }
+        }
+      }
+
+      // Fallback: save to app documents directory (no special permission required)
+      try {
+        final appDocDir = await getApplicationDocumentsDirectory();
+        final file = File('${appDocDir.path}/$fileName');
+        await file.writeAsBytes(bytes);
+        return file.path;
+      } catch (e) {
+        // give up
+      }
+
+      return null;
+    } catch (e) {
+      return null;
     }
   }
 

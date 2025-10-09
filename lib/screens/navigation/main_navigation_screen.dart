@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../dashboard/mobile_dashboard_screen.dart';
-import '../search/search_screen.dart';
 import '../history/history_screen.dart';
 import '../profile/profile_screen.dart';
 
@@ -31,12 +30,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     setState(() {
       _currentIndex = index;
     });
-    
-    // Only use PageController if it's available (mobile view)
+
     if (_pageController.hasClients) {
       _pageController.animateToPage(
         index,
-        duration: Duration(milliseconds: 300),
+        duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
       );
     }
@@ -50,21 +48,35 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context);
-    final isAdmin = authProvider.userProfile?.isAdmin ?? false;
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 800;
 
-    // List of screens
-    final screens = [
-      MobileDashboardScreen(),
-      SearchScreen(),
-      HistoryScreen(),
-      ProfileScreen(),
+    // Hanya 3 halaman sekarang: Dashboard, History, Profile
+    final List<Map<String, Object>> navItems = [
+      {
+        'screen': MobileDashboardScreen(),
+        'icon': Icons.home_outlined,
+        'activeIcon': Icons.home,
+        'label': isMobile ? 'Home' : 'Dashboard',
+      },
+      {
+        'screen': HistoryScreen(),
+        'icon': Icons.history_outlined,
+        'activeIcon': Icons.history,
+        'label': 'History',
+      },
+      {
+        'screen': ProfileScreen(),
+        'icon': Icons.person_outline,
+        'activeIcon': Icons.person,
+        'label': 'Profile',
+      },
     ];
 
+    final screens = navItems.map<Widget>((it) => it['screen'] as Widget).toList();
+
     if (isMobile) {
-      // Mobile layout with bottom navigation
+      // Layout Mobile: bottom navigation bar
       return Scaffold(
         body: PageView(
           controller: _pageController,
@@ -78,128 +90,83 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               BoxShadow(
                 color: Colors.black.withOpacity(0.1),
                 blurRadius: 10,
-                offset: Offset(0, -2),
+                offset: const Offset(0, -2),
               ),
             ],
           ),
           child: SafeArea(
             child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildNavItem(
-                    icon: Icons.home_outlined,
-                    activeIcon: Icons.home,
-                    label: 'Home',
-                    index: 0,
+                children: List.generate(navItems.length, (i) {
+                  final item = navItems[i];
+                  return _buildNavItem(
+                    icon: item['icon'] as IconData,
+                    activeIcon: item['activeIcon'] as IconData,
+                    label: item['label'] as String,
+                    index: i,
                     isMobile: true,
-                  ),
-                  _buildNavItem(
-                    icon: Icons.search_outlined,
-                    activeIcon: Icons.search,
-                    label: 'Search',
-                    index: 1,
-                    isMobile: true,
-                  ),
-                  _buildNavItem(
-                    icon: Icons.history_outlined,
-                    activeIcon: Icons.history,
-                    label: 'History',
-                    index: 2,
-                    isMobile: true,
-                  ),
-                  _buildNavItem(
-                    icon: Icons.person_outline,
-                    activeIcon: Icons.person,
-                    label: 'Profile',
-                    index: 3,
-                    isMobile: true,
-                  ),
-                ],
+                  );
+                }),
               ),
             ),
           ),
         ),
       );
     } else {
-      // Desktop layout with sidebar navigation
+      // Layout Desktop: sidebar navigation
       return Scaffold(
         body: Row(
           children: [
-            // Sidebar navigation
             Container(
               width: 250,
               color: Colors.white,
               child: Column(
                 children: [
-                  // Header
                   Container(
-                    padding: EdgeInsets.all(20),
+                    padding: const EdgeInsets.all(20),
                     child: Row(
-                      children: [
-                        Icon(Icons.water_drop, color: const Color.fromARGB(255, 57, 73, 171), size: 32),
+                      children: const [
+                        Icon(
+                          Icons.water_drop,
+                          color: Color.fromARGB(255, 57, 73, 171),
+                          size: 32,
+                        ),
                         SizedBox(width: 12),
                         Text(
                           'Kolam Ikan',
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
-                            color: const Color.fromARGB(255, 57, 73, 171),
+                            color: Color.fromARGB(255, 57, 73, 171),
                           ),
                         ),
                       ],
                     ),
                   ),
-                  Divider(),
-                  // Navigation items
+                  const Divider(),
                   Expanded(
                     child: ListView(
-                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      children: [
-                        _buildNavItem(
-                          icon: Icons.home_outlined,
-                          activeIcon: Icons.home,
-                          label: 'Dashboard',
-                          index: 0,
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      children: List.generate(navItems.length, (i) {
+                        final item = navItems[i];
+                        return _buildNavItem(
+                          icon: item['icon'] as IconData,
+                          activeIcon: item['activeIcon'] as IconData,
+                          label: item['label'] as String,
+                          index: i,
                           isMobile: false,
-                        ),
-                        _buildNavItem(
-                          icon: Icons.search_outlined,
-                          activeIcon: Icons.search,
-                          label: 'Search',
-                          index: 1,
-                          isMobile: false,
-                        ),
-                        _buildNavItem(
-                          icon: Icons.history_outlined,
-                          activeIcon: Icons.history,
-                          label: 'History',
-                          index: 2,
-                          isMobile: false,
-                        ),
-                        _buildNavItem(
-                          icon: Icons.person_outline,
-                          activeIcon: Icons.person,
-                          label: 'Profile',
-                          index: 3,
-                          isMobile: false,
-                        ),
-                      ],
+                        );
+                      }),
                     ),
                   ),
                 ],
               ),
             ),
-            // Vertical divider
-            Container(
-              width: 1,
-              color: Colors.grey[300],
-            ),
-            // Main content
-            Expanded(
-              child: screens[_currentIndex],
-            ),
+            Container(width: 1, color: Colors.grey[300]),
+            Expanded(child: screens[_currentIndex]),
           ],
         ),
       );
@@ -214,16 +181,18 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     required bool isMobile,
   }) {
     final isActive = _currentIndex == index;
-    
+
     return GestureDetector(
       onTap: () => _onTabTapped(index),
       child: Container(
-        margin: isMobile ? EdgeInsets.zero : EdgeInsets.symmetric(vertical: 2),
-        padding: isMobile 
-            ? EdgeInsets.symmetric(horizontal: 16, vertical: 8)
-            : EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        margin: isMobile ? EdgeInsets.zero : const EdgeInsets.symmetric(vertical: 2),
+        padding: isMobile
+            ? const EdgeInsets.symmetric(horizontal: 16, vertical: 8)
+            : const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: isActive ? const Color.fromARGB(255, 57, 73, 171) : Colors.transparent,
+          color: isActive
+              ? const Color.fromARGB(255, 57, 73, 171)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(isMobile ? 20 : 8),
         ),
         child: Row(
@@ -235,10 +204,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               size: 24,
             ),
             if (isActive && isMobile) ...[
-              SizedBox(width: 8),
+              const SizedBox(width: 8),
               Text(
                 label,
-                style: TextStyle(
+                style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w600,
                   fontSize: 14,
@@ -246,7 +215,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               ),
             ],
             if (!isMobile) ...[
-              SizedBox(width: 12),
+              const SizedBox(width: 12),
               Text(
                 label,
                 style: TextStyle(

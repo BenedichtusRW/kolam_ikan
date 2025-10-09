@@ -38,7 +38,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (!mounted) return;
     if (success) {
-      // Navigate based on role
       if (authProvider.userProfile?.isAdmin == true) {
         Navigator.pushReplacement(
           context,
@@ -51,7 +50,6 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       }
     } else {
-      // Show snackbar if there's error message
       if (authProvider.errorMessage != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(authProvider.errorMessage!)),
@@ -83,7 +81,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Ensure we account for keyboard inset when scrolling
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
     return Scaffold(
@@ -100,10 +97,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.max,
                     children: [
-                      // Center vertically: put available space above and below the card
                       const SizedBox(height: 8),
-
-                      // The Card container: constrain its max width for large screens
                       Center(
                         child: ConstrainedBox(
                           constraints: const BoxConstraints(maxWidth: 540),
@@ -159,7 +153,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                             ),
                                           ),
                                           const SizedBox(height: 8),
-                                          Text(
+                                          const Text(
                                             'KOLAM IKAN',
                                             style: TextStyle(
                                               color: Colors.white,
@@ -182,7 +176,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ),
                                     const SizedBox(height: 24),
 
-                                    // Email
+                                    // Email field
                                     TextFormField(
                                       controller: _emailController,
                                       keyboardType: TextInputType.emailAddress,
@@ -208,7 +202,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ),
                                     const SizedBox(height: 14),
 
-                                    // Password
+                                    // Password field
                                     TextFormField(
                                       controller: _passwordController,
                                       obscureText: _obscurePassword,
@@ -217,7 +211,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                         prefixIcon: const Icon(Icons.lock),
                                         suffixIcon: IconButton(
                                           icon: Icon(
-                                            _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                                            _obscurePassword
+                                                ? Icons.visibility
+                                                : Icons.visibility_off,
                                           ),
                                           onPressed: () {
                                             setState(() {
@@ -248,7 +244,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                         return SizedBox(
                                           width: double.infinity,
                                           child: ElevatedButton(
-                                            onPressed: authProvider.isLoading ? null : _handleLogin,
+                                            onPressed: authProvider.isLoading
+                                                ? null
+                                                : _handleLogin,
                                             style: ElevatedButton.styleFrom(
                                               backgroundColor: Colors.blue[600],
                                               foregroundColor: Colors.white,
@@ -268,52 +266,25 @@ class _LoginScreenState extends State<LoginScreen> {
                                                   )
                                                 : const Text(
                                                     'Masuk',
-                                                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                                    style: TextStyle(
+                                                      fontSize: 16,
+                                                      fontWeight: FontWeight.bold,
+                                                    ),
                                                   ),
                                           ),
                                         );
                                       },
                                     ),
 
-                                    // Error message
-                                    Consumer<AuthProvider>(
-                                      builder: (context, authProvider, child) {
-                                        if (authProvider.errorMessage != null) {
-                                          return Container(
-                                            margin: const EdgeInsets.only(top: 12),
-                                            padding: const EdgeInsets.all(12),
-                                            decoration: BoxDecoration(
-                                              color: Colors.red[50],
-                                              borderRadius: BorderRadius.circular(8),
-                                              border: Border.all(color: Colors.red[300]!),
-                                            ),
-                                            child: Row(
-                                              children: [
-                                                const Icon(Icons.error, color: Colors.red, size: 20),
-                                                const SizedBox(width: 8),
-                                                Expanded(
-                                                  child: Text(
-                                                    authProvider.errorMessage!,
-                                                    style: const TextStyle(color: Colors.red),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          );
-                                        }
-                                        return const SizedBox.shrink();
-                                      },
-                                    ),
-
                                     const SizedBox(height: 18),
 
-                                    // Divider
                                     Row(
                                       children: [
                                         Expanded(child: Divider(color: Colors.grey[300])),
                                         Padding(
                                           padding: const EdgeInsets.symmetric(horizontal: 12),
-                                          child: Text('atau masuk dengan', style: TextStyle(color: Colors.grey[600])),
+                                          child: Text('atau masuk dengan',
+                                              style: TextStyle(color: Colors.grey[600])),
                                         ),
                                         Expanded(child: Divider(color: Colors.grey[300])),
                                       ],
@@ -321,22 +292,32 @@ class _LoginScreenState extends State<LoginScreen> {
 
                                     const SizedBox(height: 14),
 
-                                    // Google sign in
+                                    // Google sign-in (warna biru)
                                     Consumer<AuthProvider>(
                                       builder: (context, authProvider, child) {
                                         return SizedBox(
                                           width: double.infinity,
                                           child: OutlinedButton.icon(
-                                            onPressed: authProvider.isLoading ? null : _signInWithGoogle,
+                                            onPressed: authProvider.isLoading
+                                                ? null
+                                                : _signInWithGoogle,
                                             icon: SvgPicture.asset(
                                               'assets/images/google_logo.svg',
                                               height: 20,
                                               width: 20,
                                             ),
-                                            label: const Text('Masuk dengan Google'),
+                                            label: const Text(
+                                              'Masuk dengan Google',
+                                              style: TextStyle(
+                                                color: Colors.blue,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
                                             style: OutlinedButton.styleFrom(
                                               padding: const EdgeInsets.symmetric(vertical: 12),
-                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(8),
+                                              ),
                                             ),
                                           ),
                                         );
@@ -350,52 +331,30 @@ class _LoginScreenState extends State<LoginScreen> {
                                       alignment: WrapAlignment.center,
                                       crossAxisAlignment: WrapCrossAlignment.center,
                                       children: [
-                                        Text('Belum punya akun? ', style: TextStyle(color: Colors.grey[600])),
+                                        Text('Belum punya akun? ',
+                                            style: TextStyle(color: Colors.grey[600])),
                                         TextButton(
                                           onPressed: () => Navigator.push(
                                             context,
-                                            MaterialPageRoute(builder: (context) => SignupScreen()),
+                                            MaterialPageRoute(
+                                              builder: (context) => const SignupScreen(),
+                                            ),
                                           ),
                                           style: TextButton.styleFrom(
-                                            padding: EdgeInsets.symmetric(horizontal: 4, vertical: 0),
-                                            minimumSize: Size(0, 0),
-                                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                                            minimumSize: Size.zero,
+                                            tapTargetSize:
+                                                MaterialTapTargetSize.shrinkWrap,
                                           ),
                                           child: Text(
                                             'Daftar Sekarang',
-                                            style: TextStyle(color: Colors.blue[600], fontWeight: FontWeight.w600),
+                                            style: TextStyle(
+                                              color: Colors.blue[600],
+                                              fontWeight: FontWeight.w600,
+                                            ),
                                           ),
                                         ),
                                       ],
-                                    ),
-
-                                    const SizedBox(height: 8),
-
-                                    // Testing hints (compact)
-                                    Container(
-                                      margin: const EdgeInsets.only(top: 6),
-                                      padding: const EdgeInsets.all(12),
-                                      decoration: BoxDecoration(
-                                        color: Colors.blue[50],
-                                        borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(color: Colors.blue[100]!),
-                                      ),
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Row(
-                                            children: const [
-                                              Icon(Icons.info_outline, color: Colors.blue, size: 18),
-                                              SizedBox(width: 8),
-                                              Text('Login untuk Testing', style: TextStyle(fontWeight: FontWeight.bold)),
-                                            ],
-                                          ),
-                                          const SizedBox(height: 10),
-                                          _buildLoginHint('Admin', 'admin@kolamikan.com'),
-                                          const SizedBox(height: 8),
-                                          _buildLoginHint('User', 'user@kolamikan.com'),
-                                        ],
-                                      ),
                                     ),
                                   ],
                                 ),
@@ -404,8 +363,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                       ),
-
-                      // Fill remaining space so card centers nicely
                       const Spacer(),
                     ],
                   ),
@@ -413,41 +370,6 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             );
           },
-        ),
-      ),
-    );
-  }
-
-  // Interactive helper to build login hint row with tap functionality
-  Widget _buildLoginHint(String role, String email) {
-    return GestureDetector(
-      onTap: () {
-        // Auto-fill the email and password fields
-        _emailController.text = email;
-        _passwordController.text = 'password123'; // Default password for testing
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 6),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: Colors.blue[50]!),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.person, color: Colors.blue, size: 16),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(role, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                  Text(email, style: const TextStyle(fontSize: 11, color: Colors.blue)),
-                ],
-              ),
-            ),
-            const Text('Tap to use', style: TextStyle(fontSize: 10, fontStyle: FontStyle.italic, color: Colors.blueGrey)),
-          ],
         ),
       ),
     );

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../models/user_profile.dart';
 import 'user_dashboard_view_screen.dart';
+import '../../services/export_service.dart';
 
 class UserListScreen extends StatelessWidget {
   @override
@@ -20,6 +21,12 @@ class UserListScreen extends StatelessWidget {
             fontWeight: FontWeight.bold,
           ),
         ),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _onExportSemua(context),
+        label: Text('Export Semua'),
+        icon: Icon(Icons.download_rounded),
+        backgroundColor: const Color.fromARGB(255, 57, 73, 171),
       ),
       body: SingleChildScrollView(
         padding: EdgeInsets.all(16),
@@ -88,6 +95,50 @@ class UserListScreen extends StatelessWidget {
 
     return Column(
       children: sampleUsers.map((user) => _buildUserCard(context, user)).toList(),
+    );
+  }
+
+  void _onExportSemua(BuildContext context) async {
+    // Gather pondIds from sample users for now
+    final sampleUsers = [
+      'pond1', 'pond2', 'pond3', 'pond4'
+    ];
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: Text('Export Semua User'),
+          content: Text('Pilih format file untuk mengekspor seluruh data user (mock).'),
+          actions: [
+            TextButton(
+              onPressed: () async {
+                Navigator.of(ctx).pop();
+                final saved = await ExportService.exportPDF(context: context, pondIds: sampleUsers, date: DateTime.now());
+                if (saved != null) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('PDF disimpan: $saved')));
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal menyimpan PDF')));
+                }
+              },
+              child: Text('PDF'),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.of(ctx).pop();
+                final saved = await ExportService.exportExcel(context: context, pondIds: sampleUsers, date: DateTime.now());
+                if (saved != null) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Excel disimpan: $saved')));
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal menyimpan Excel')));
+                }
+              },
+              child: Text('Excel'),
+            ),
+            TextButton(onPressed: () => Navigator.of(ctx).pop(), child: Text('Batal')),
+          ],
+        );
+      },
     );
   }
 

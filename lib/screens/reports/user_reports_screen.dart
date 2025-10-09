@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../admin/user_dashboard_view_screen.dart';
 
 class UserReportsScreen extends StatefulWidget {
   const UserReportsScreen({Key? key}) : super(key: key);
@@ -10,7 +11,7 @@ class UserReportsScreen extends StatefulWidget {
 class _UserReportsScreenState extends State<UserReportsScreen> {
   String _selectedFilter = 'All Users';
   List<String> _filterOptions = ['All Users', 'Active Users', 'Inactive Users'];
-  
+
   // Mock data untuk user reports
   List<Map<String, dynamic>> _userReports = [
     {
@@ -25,7 +26,7 @@ class _UserReportsScreenState extends State<UserReportsScreen> {
       'alertCount': 2,
     },
     {
-      'id': 'user_002', 
+      'id': 'user_002',
       'name': 'Siti Nurhaliza',
       'email': 'siti@example.com',
       'pondId': 'pond_002',
@@ -38,7 +39,7 @@ class _UserReportsScreenState extends State<UserReportsScreen> {
     {
       'id': 'user_003',
       'name': 'Ahmad Rahman',
-      'email': 'ahmad@example.com', 
+      'email': 'ahmad@example.com',
       'pondId': 'pond_003',
       'pondName': 'Kolam C',
       'status': 'inactive',
@@ -97,7 +98,7 @@ class _UserReportsScreenState extends State<UserReportsScreen> {
               ],
             ),
           ),
-          
+
           // Summary Cards
           Container(
             padding: EdgeInsets.all(16),
@@ -132,7 +133,7 @@ class _UserReportsScreenState extends State<UserReportsScreen> {
               ],
             ),
           ),
-          
+
           // User List
           Expanded(
             child: ListView.builder(
@@ -160,7 +161,12 @@ class _UserReportsScreenState extends State<UserReportsScreen> {
     }
   }
 
-  Widget _buildSummaryCard(String title, String value, IconData icon, Color color) {
+  Widget _buildSummaryCard(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Card(
       elevation: 2,
       child: Padding(
@@ -180,10 +186,7 @@ class _UserReportsScreenState extends State<UserReportsScreen> {
             SizedBox(height: 4),
             Text(
               title,
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey[600],
-              ),
+              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
               textAlign: TextAlign.center,
             ),
           ],
@@ -196,7 +199,7 @@ class _UserReportsScreenState extends State<UserReportsScreen> {
     bool isActive = user['status'] == 'active';
     DateTime lastActivity = user['lastActivity'];
     String timeAgo = _getTimeAgo(lastActivity);
-    
+
     return Card(
       margin: EdgeInsets.only(bottom: 12),
       elevation: 2,
@@ -232,7 +235,10 @@ class _UserReportsScreenState extends State<UserReportsScreen> {
                           ),
                           SizedBox(width: 8),
                           Container(
-                            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
                               color: isActive ? Colors.green : Colors.grey,
                               borderRadius: BorderRadius.circular(12),
@@ -251,10 +257,7 @@ class _UserReportsScreenState extends State<UserReportsScreen> {
                       SizedBox(height: 4),
                       Text(
                         user['email'],
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 14,
-                        ),
+                        style: TextStyle(color: Colors.grey[600], fontSize: 14),
                       ),
                     ],
                   ),
@@ -284,42 +287,19 @@ class _UserReportsScreenState extends State<UserReportsScreen> {
                         ],
                       ),
                     ),
-                    PopupMenuItem<String>(
-                      value: 'edit',
-                      child: Row(
-                        children: [
-                          Icon(Icons.edit, size: 18),
-                          SizedBox(width: 8),
-                          Text('Edit User'),
-                        ],
-                      ),
-                    ),
-                    PopupMenuItem<String>(
-                      value: 'reports',
-                      child: Row(
-                        children: [
-                          Icon(Icons.assessment, size: 18),
-                          SizedBox(width: 8),
-                          Text('Generate Report'),
-                        ],
-                      ),
-                    ),
+                    // Removed Edit User and Generate Report per request
                   ],
                 ),
               ],
             ),
-            
+
             SizedBox(height: 16),
-            
+
             // Info Grid
             Row(
               children: [
                 Expanded(
-                  child: _buildInfoItem(
-                    'Pond',
-                    user['pondName'],
-                    Icons.pool,
-                  ),
+                  child: _buildInfoItem('Pond', user['pondName'], Icons.pool),
                 ),
                 Expanded(
                   child: _buildInfoItem(
@@ -357,19 +337,10 @@ class _UserReportsScreenState extends State<UserReportsScreen> {
         SizedBox(height: 4),
         Text(
           value,
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 14,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
         ),
         SizedBox(height: 2),
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.grey[600],
-            fontSize: 12,
-          ),
-        ),
+        Text(label, style: TextStyle(color: Colors.grey[600], fontSize: 12)),
       ],
     );
   }
@@ -377,7 +348,7 @@ class _UserReportsScreenState extends State<UserReportsScreen> {
   String _getTimeAgo(DateTime dateTime) {
     final now = DateTime.now();
     final difference = now.difference(dateTime);
-    
+
     if (difference.inDays > 0) {
       return '${difference.inDays}d ago';
     } else if (difference.inHours > 0) {
@@ -397,25 +368,22 @@ class _UserReportsScreenState extends State<UserReportsScreen> {
       case 'dashboard':
         _viewUserDashboard(user);
         break;
-      case 'edit':
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Edit user: ${user['name']}')),
-        );
-        break;
-      case 'reports':
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Generating report for: ${user['name']}')),
-        );
+      default:
         break;
     }
   }
 
   void _viewUserDashboard(Map<String, dynamic> user) {
-    // Feature removed - User dashboard editing not available
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('User dashboard view feature has been removed'),
-        backgroundColor: Colors.orange,
+    // Navigate directly to the User Dashboard (no download dialog here)
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => UserDashboardViewScreen(
+          userId: user['id'] ?? user['userId'] ?? 'unknown',
+          userName: user['name'] ?? 'Unknown User',
+          pondId: user['pondId'] ?? 'pond_001',
+          pondName: user['pondName'] ?? 'Unknown Pond',
+        ),
       ),
     );
   }
@@ -464,9 +432,7 @@ class _UserReportsScreenState extends State<UserReportsScreen> {
               style: TextStyle(fontWeight: FontWeight.w600),
             ),
           ),
-          Expanded(
-            child: Text(value),
-          ),
+          Expanded(child: Text(value)),
         ],
       ),
     );

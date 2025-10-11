@@ -1,749 +1,566 @@
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:syncfusion_flutter_gauges/gauges.dart';
-import 'package:permission_handler/permission_handler.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:excel/excel.dart';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
-import 'dart:convert';
+
+import 'package:excel/excel.dart' as excel_pkg;
+import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:provider/provider.dart';
+import 'package:syncfusion_flutter_gauges/gauges.dart';
+
 import '../../providers/dashboard_provider.dart';
+import '../../utils/mock_data_generator.dart';
+import '../../widgets/modern_gauge_widget.dart';
+import 'user_list_screen.dart';
 
+// Clean admin dashboard implementation matching requested UI (blue theme, gauge cards)
 class UserDashboardViewScreen extends StatefulWidget {
-  final String userId;
-  final String userName;
-  final String pondId;
-  final String pondName;
+  final String? userId;
+  final String? userName;
+  final String? pondId;
+  final String? pondName;
 
-  const UserDashboardViewScreen({
-    Key? key,
-    required this.userId,
-    required this.userName,
-    required this.pondId,
-    required this.pondName,
-  }) : super(key: key);
+  const UserDashboardViewScreen({Key? key, this.userId, this.userName, this.pondId, this.pondName}) : super(key: key);
 
   @override
-  State<UserDashboardViewScreen> createState() =>
-      _UserDashboardViewScreenState();
+  State<UserDashboardViewScreen> createState() => _UserDashboardViewScreenState();
 }
 
 class _UserDashboardViewScreenState extends State<UserDashboardViewScreen> {
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final dashboardProvider = Provider.of<DashboardProvider>(
-        context,
-        listen: false,
-      );
-      dashboardProvider.initialize(widget.pondId);
-    });
-  }
+  String _selectedChartType = 'temperature';
+  final Color _primaryBlue = const Color(0xFF1976D2);
 
   @override
   Widget build(BuildContext context) {
+    // Mock sample users for admin overview (replace with Firestore fetch in production)
+    final sampleUsers = [
+      {
+        'uid': 'user_budi',
+        'name': 'Budi Santoso',
+        'email': 'budi@example.com',
+        'pond': 'Kolam A',
+        'pondId': 'pond_a',
+        'sensors': 4,
+        'alerts': 2,
+        'status': 'Active',
+        'temperature': 28.5,
+        'ph': 7.2,
+        'oxygen': 8.4,
+      },
+      {
+        'uid': 'user_siti',
+        'name': 'Siti Nurhaliza',
+        'email': 'siti@example.com',
+        'pond': 'Kolam B',
+        'pondId': 'pond_b',
+        'sensors': 4,
+        'alerts': 0,
+        'status': 'Active',
+        'temperature': 27.1,
+        'ph': 7.6,
+        'oxygen': 9.1,
+      },
+      {
+        'uid': 'user_ahmad',
+        'name': 'Ahmad Rahman',
+        'email': 'ahmad@example.com',
+        'pond': 'Kolam C',
+        'pondId': 'pond_c',
+        'sensors': 3,
+        'alerts': 1,
+        'status': 'Inactive',
+        'temperature': 26.3,
+        'ph': 6.9,
+        'oxygen': 7.0,
+      },
+    ];
+
+    final totalUsers = sampleUsers.length;
+    final activeUsers = sampleUsers.where((u) => u['status'] == 'Active').length;
+    final totalDevices = sampleUsers.fold<int>(0, (p, u) => p + (u['sensors'] as int));
+
+    // If userId provided, show per-user view
+    if (widget.userId != null) return _buildPerUserView();
+
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Dashboard: ${widget.userName}'),
-            Text(
-              widget.pondName,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.normal,
-                color: Colors.white70,
-              ),
-            ),
-          ],
-        ),
-        backgroundColor: const Color.fromARGB(255, 57, 73, 171),
-        foregroundColor: Colors.white,
+        title: const Text('Dashboard Admin', style: TextStyle(color: Colors.white)),
+        backgroundColor: _primaryBlue,
         elevation: 0,
-        actions: [
-          IconButton(
-            icon: Icon(Icons.download_rounded),
-            onPressed: () => _downloadReport(context),
-            tooltip: 'Download Laporan',
-          ),
-        ],
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: SingleChildScrollView(
-        padding: EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // User Info Card
-            Card(
-              elevation: 4,
-              child: Container(
-                width: double.infinity,
-                padding: EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  gradient: LinearGradient(
-                    colors: [Colors.blue[400]!, Colors.blue[600]!],
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 30,
-                      backgroundColor: Colors.white,
-                      child: Text(
-                        widget.userName.substring(0, 1).toUpperCase(),
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.blue[600],
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            widget.userName,
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          SizedBox(height: 4),
-                          Text(
-                            'ID: ${widget.userId}',
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 14,
-                            ),
-                          ),
-                          Text(
-                            widget.pondName,
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 16,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.green,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        'User View',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            SizedBox(height: 24),
-
-            // Kondisi Terkini Section - Same as user dashboard
-            Text(
-              'Kondisi Terkini - ${widget.pondName}',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey[800],
-              ),
-            ),
-            SizedBox(height: 16),
-
-            // Sensor Data Cards dengan Gauge Speedometer - Copy dari Admin Dashboard yang sukses
-            Consumer<DashboardProvider>(
-              builder: (context, dashboardProvider, child) {
-                final sensorData = dashboardProvider.currentSensorData;
-
-                return Column(
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildSensorCard(
-                            'Suhu Air',
-                            (sensorData?.temperature ?? 24.5).toStringAsFixed(
-                              1,
-                            ),
-                            '°C',
-                            Icons.thermostat,
-                            Colors.orange,
-                          ),
-                        ),
-                        SizedBox(width: 12),
-                        Expanded(
-                          child: _buildSensorCard(
-                            'Oksigen',
-                            (sensorData?.oxygen ?? 7.6).toStringAsFixed(1),
-                            'ppm',
-                            Icons.air,
-                            Colors.blue,
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildSensorCard(
-                            'pH',
-                            (sensorData?.phLevel ?? 6.7).toStringAsFixed(1),
-                            '',
-                            Icons.science,
-                            Colors.green,
-                          ),
-                        ),
-                        SizedBox(width: 12),
-                        // Empty space to maintain layout
-                        Expanded(child: SizedBox()),
-                      ],
-                    ),
-                  ],
-                );
-              },
-            ),
-
-            SizedBox(height: 24),
-
-            // Status Information
-            Card(
-              elevation: 2,
-              child: Padding(
-                padding: EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.info_outline, color: Colors.blue),
-                        SizedBox(width: 8),
-                        Text(
-                          'Status Informasi',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 16),
-                    _buildInfoRow('User ID', widget.userId),
-                    _buildInfoRow('Nama User', widget.userName),
-                    _buildInfoRow('Pond ID', widget.pondId),
-                    _buildInfoRow('Nama Kolam', widget.pondName),
-                    _buildInfoRow('Akses Level', 'User Biasa'),
-                    _buildInfoRow('Status', 'Aktif'),
-                  ],
-                ),
-              ),
-            ),
-
-            SizedBox(height: 24),
-
-            // Admin Notes
-            Card(
-              elevation: 2,
-              color: Colors.amber[50],
-              child: Padding(
-                padding: EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.admin_panel_settings,
-                          color: Colors.amber[800],
-                        ),
-                        SizedBox(width: 8),
-                        Text(
-                          'Catatan Admin',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.amber[800],
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 12),
-                    Text(
-                      '• Ini adalah tampilan dashboard yang sama persis dengan yang dilihat oleh user',
-                      style: TextStyle(color: Colors.amber[800]),
-                    ),
-                    Text(
-                      '• User hanya bisa melihat data, tidak bisa mengontrol perangkat',
-                      style: TextStyle(color: Colors.amber[800]),
-                    ),
-                    Text(
-                      '• Untuk mengontrol perangkat, gunakan panel admin',
-                      style: TextStyle(color: Colors.amber[800]),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // Method _buildSensorCard yang sukses dari Admin Dashboard
-  Widget _buildSensorCard(
-    String title,
-    String value,
-    String unit,
-    IconData icon,
-    Color color,
-  ) {
-    // Parse value untuk gauge calculation
-    double numericValue = double.tryParse(value) ?? 0.0;
-
-    // Tentukan range berdasarkan jenis sensor
-    double minValue = 0.0;
-    double maxValue = 100.0;
-    List<GaugeRange> ranges = [];
-
-    if (title.contains('Suhu')) {
-      minValue = 20.0;
-      maxValue = 35.0;
-      ranges = [
-        GaugeRange(startValue: 20, endValue: 25, color: Colors.blue.shade300),
-        GaugeRange(startValue: 25, endValue: 32, color: Colors.green),
-        GaugeRange(startValue: 32, endValue: 35, color: Colors.red.shade400),
-      ];
-    } else if (title.contains('pH')) {
-      minValue = 6.0;
-      maxValue = 9.0;
-      ranges = [
-        GaugeRange(startValue: 6.0, endValue: 6.5, color: Colors.red.shade400),
-        GaugeRange(startValue: 6.5, endValue: 8.5, color: Colors.green),
-        GaugeRange(startValue: 8.5, endValue: 9.0, color: Colors.red.shade400),
-      ];
-    } else if (title.contains('Oksigen')) {
-      minValue = 0.0;
-      maxValue = 12.0;
-      ranges = [
-        GaugeRange(startValue: 0, endValue: 5, color: Colors.red.shade400),
-        GaugeRange(startValue: 5, endValue: 7, color: Colors.orange),
-        GaugeRange(startValue: 7, endValue: 12, color: Colors.blue),
-      ];
-    }
-
-    return Card(
-      elevation: 2,
-      child: Padding(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Icon(icon, color: color, size: 24),
-                SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.grey[700],
-                    ),
-                  ),
+                const Icon(Icons.filter_list, color: Colors.black54),
+                const SizedBox(width: 8),
+                const Text('Filter:', style: TextStyle(color: Colors.black54, fontWeight: FontWeight.w600)),
+                const SizedBox(width: 12),
+                DropdownButton<String>(
+                  value: 'All Users',
+                  items: ['All Users', 'Active', 'Inactive']
+                      .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                      .toList(),
+                  onChanged: (_) {},
                 ),
+                const Spacer(),
+                    ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => UserListScreen()));
+                  },
+                  icon: const Icon(Icons.manage_accounts, color: Colors.white),
+                  label: const Text('Manage Users', style: TextStyle(color: Colors.white)),
+                  style: ElevatedButton.styleFrom(backgroundColor: _primaryBlue, foregroundColor: Colors.white),
+                )
               ],
             ),
-            SizedBox(height: 16),
 
-            // Gauge Speedometer - Sama seperti di Admin Dashboard!
-            Container(
-              height: 120,
-              child: SfRadialGauge(
-                axes: <RadialAxis>[
-                  RadialAxis(
-                    minimum: minValue,
-                    maximum: maxValue,
-                    showLabels: true,
-                    showTicks: true,
-                    axisLabelStyle: GaugeTextStyle(fontSize: 10),
-                    majorTickStyle: MajorTickStyle(length: 6),
-                    minorTickStyle: MinorTickStyle(length: 3),
-                    ranges: ranges,
-                    pointers: <GaugePointer>[
-                      // Jarum penunjuk
-                      NeedlePointer(
-                        value: numericValue,
-                        needleLength: 0.7,
-                        needleStartWidth: 1,
-                        needleEndWidth: 3,
-                        needleColor: Colors.grey[800],
-                        knobStyle: KnobStyle(
-                          knobRadius: 0.05,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ],
-                    annotations: <GaugeAnnotation>[
-                      // Nilai di tengah gauge
-                      GaugeAnnotation(
-                        widget: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              '$value',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.grey[800],
-                              ),
-                            ),
-                            Text(
-                              unit,
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                          ],
-                        ),
-                        angle: 90,
-                        positionFactor: 0.75,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+            const SizedBox(height: 16),
+
+            Row(
+              children: [
+                Expanded(child: _buildSummaryCard(Icons.group, 'Total Users', totalUsers.toString(), _primaryBlue)),
+                const SizedBox(width: 12),
+                Expanded(child: _buildSummaryCard(Icons.person, 'Active Users', activeUsers.toString(), _primaryBlue.withOpacity(0.9))),
+                const SizedBox(width: 12),
+                Expanded(child: _buildSummaryCard(Icons.devices_other, 'Total Devices', totalDevices.toString(), _primaryBlue.withOpacity(0.7))),
+              ],
             ),
 
-            SizedBox(height: 8),
+            const SizedBox(height: 16),
+            const Text('Users', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
 
-            // Status text
-            Center(
-              child: Text(
-                _getStatusText(title, numericValue),
-                style: TextStyle(
-                  fontSize: 12,
-                  color: _getStatusColor(title, numericValue),
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
+            Column(children: sampleUsers.map((u) => _buildAdminUserCard(u)).toList()),
           ],
         ),
       ),
-    );
-  }
-
-  Color _getStatusColor(String title, double value) {
-    if (title.contains('Suhu')) {
-      if (value < 25) return Colors.blue;
-      if (value > 32) return Colors.red;
-      return Colors.green;
-    } else if (title.contains('pH')) {
-      if (value < 6.5 || value > 8.5) return Colors.red;
-      return Colors.green;
-    } else if (title.contains('Oksigen')) {
-      if (value < 5) return Colors.red;
-      if (value < 7) return Colors.orange;
-      return Colors.blue;
-    }
-    return Colors.grey;
-  }
-
-  String _getStatusText(String title, double value) {
-    if (title.contains('Suhu')) {
-      if (value < 25) return 'Rendah';
-      if (value > 32) return 'Tinggi';
-      return 'Normal';
-    } else if (title.contains('pH')) {
-      if (value < 6.5 || value > 8.5) return 'Tidak Normal';
-      return 'Normal';
-    } else if (title.contains('Oksigen')) {
-      if (value < 5) return 'Rendah';
-      if (value < 7) return 'Sedang';
-      return 'Baik';
-    }
-    return 'Normal';
-  }
-
-  Widget _buildInfoRow(String label, String value) {
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 100,
-            child: Text(
-              '$label:',
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                color: Colors.grey[700],
-              ),
-            ),
-          ),
-          Expanded(
-            child: Text(value, style: TextStyle(color: Colors.grey[800])),
-          ),
-        ],
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () async {
+          await _generatePDFReport();
+          await _generateExcelReport();
+        },
+        label: const Text('Export Semua', style: TextStyle(color: Colors.white)),
+        icon: const Icon(Icons.download_rounded, color: Colors.white),
+        backgroundColor: _primaryBlue,
       ),
     );
   }
 
-  void _downloadReport(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Row(
-            children: [
-              Icon(
-                Icons.download_rounded,
-                color: const Color.fromARGB(255, 57, 73, 171),
-              ),
-              SizedBox(width: 8),
-              Text('Download Laporan'),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Pilih format laporan untuk ${widget.userName}:'),
-              SizedBox(height: 16),
-              ListTile(
-                leading: Icon(Icons.picture_as_pdf, color: Colors.red),
-                title: Text('Download sebagai PDF'),
-                subtitle: Text('Laporan lengkap dengan grafik'),
-                onTap: () {
-                  Navigator.of(context).pop();
-                  _generatePDFReport();
-                },
-              ),
-              ListTile(
-                leading: Icon(Icons.table_chart, color: Colors.green),
-                title: Text('Download sebagai Excel'),
-                subtitle: Text('Data dalam format spreadsheet'),
-                onTap: () {
-                  Navigator.of(context).pop();
-                  _generateExcelReport();
-                },
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text('Batal'),
-            ),
-          ],
-        );
+  // Per-user view
+  Widget _buildPerUserView() {
+    return ChangeNotifierProvider<DashboardProvider>(
+      create: (_) {
+        final dp = DashboardProvider();
+        if (widget.pondId != null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) async {
+            await dp.switchPond(widget.pondId!, '');
+            Future.delayed(const Duration(milliseconds: 250), () {
+              if (dp.recentData.isEmpty) dp.enableTestingMode();
+            });
+          });
+        } else {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            dp.enableTestingMode();
+          });
+        }
+        return dp;
       },
-    );
-  }
+      child: Consumer<DashboardProvider>(builder: (context, dashboardProvider, child) {
+        final temp = dashboardProvider.currentSensorData?.temperature ?? 25.0;
+        final oxy = dashboardProvider.currentSensorData?.oxygen ?? 7.0;
+        final ph = dashboardProvider.currentSensorData?.phLevel ?? 7.0;
 
-  void _generatePDFReport() async {
-    try {
-      _showProgressSnackBar('Membuat laporan PDF...');
+        final tempStatus = GaugeHelper.getTemperatureStatus(temp);
+        final oxyStatus = GaugeHelper.getOxygenStatus(oxy);
+        final phStatus = GaugeHelper.getPhStatus(ph);
 
-      // Buat isi PDF sederhana (placeholder). Untuk laporan sesungguhnya, gunakan package `pdf`.
-      final String content =
-          'Laporan Monitoring Kolam Ikan - ${widget.userName}\nKolam: ${widget.pondName}\nTanggal: ${DateTime.now()}\n\n(Ini adalah file PDF placeholder yang berisi teks. Untuk hasil terbaik gunakan package pdf.)';
-      final Uint8List bytes = Uint8List.fromList(utf8.encode(content));
-
-      // Nama file
-      String fileName =
-          'Laporan_${widget.userName.replaceAll(' ', '_')}_${DateTime.now().millisecondsSinceEpoch}.pdf';
-
-      final savedPath = await _saveFileBytes(
-        bytes,
-        fileName,
-        preferDownloads: true,
-      );
-      if (savedPath != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
+        return Scaffold(
+          appBar: AppBar(title: Text(widget.userName ?? 'User Dashboard'), backgroundColor: _primaryBlue),
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.check_circle, color: Colors.white),
-                SizedBox(width: 8),
-                Expanded(
-                  child: Text('Laporan PDF berhasil disimpan di: $savedPath'),
+                Card(
+                  elevation: 2,
+                  child: Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text(widget.userName ?? '', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 6),
+                      Text('Kolam: ${widget.pondName ?? widget.pondId ?? ''}'),
+                      const SizedBox(height: 8),
+                      Row(children: [
+                        ElevatedButton.icon(onPressed: _generatePDFReport, icon: const Icon(Icons.picture_as_pdf), label: const Text('Download PDF'), style: ElevatedButton.styleFrom(backgroundColor: _primaryBlue, foregroundColor: Colors.white)),
+                        const SizedBox(width: 12),
+                        ElevatedButton.icon(onPressed: _generateExcelReport, icon: const Icon(Icons.table_chart), label: const Text('Download Excel'), style: ElevatedButton.styleFrom(backgroundColor: _primaryBlue, foregroundColor: Colors.white)),
+                      ])
+                    ]),
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // Gauges as cards to match screenshot
+                Card(
+                  elevation: 3,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      const Text('Kondisi Terkini', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 12),
+                      LayoutBuilder(builder: (ctx, constraints) {
+                        final wide = constraints.maxWidth > 600;
+                        if (wide) {
+                          return Column(children: [
+                            Row(children: [
+                              Expanded(child: _buildGaugeCard(title: 'Suhu Air', icon: Icons.thermostat, value: temp, unit: '°C', minValue: 20, maxValue: 35, status: tempStatus, ranges: GaugeHelper.getTemperatureRanges())),
+                              const SizedBox(width: 12),
+                              Expanded(child: _buildGaugeCard(title: 'Oksigen', icon: Icons.air, value: oxy, unit: 'ppm', minValue: 0, maxValue: 15, status: oxyStatus, ranges: GaugeHelper.getOxygenRanges())),
+                            ]),
+                            const SizedBox(height: 12),
+                            Row(children: [
+                              Expanded(child: _buildGaugeCard(title: 'pH', icon: Icons.science, value: ph, unit: '', minValue: 6, maxValue: 8.5, status: phStatus, ranges: GaugeHelper.getPhRanges())),
+                              const SizedBox(width: 12),
+                              const Expanded(child: SizedBox()),
+                            ])
+                          ]);
+                        } else {
+                          return Column(children: [
+                            _buildGaugeCard(title: 'Suhu Air', icon: Icons.thermostat, value: temp, unit: '°C', minValue: 20, maxValue: 35, status: tempStatus, ranges: GaugeHelper.getTemperatureRanges()),
+                            const SizedBox(height: 12),
+                            _buildGaugeCard(title: 'Oksigen', icon: Icons.air, value: oxy, unit: 'ppm', minValue: 0, maxValue: 15, status: oxyStatus, ranges: GaugeHelper.getOxygenRanges()),
+                            const SizedBox(height: 12),
+                            _buildGaugeCard(title: 'pH', icon: Icons.science, value: ph, unit: '', minValue: 6, maxValue: 8.5, status: phStatus, ranges: GaugeHelper.getPhRanges()),
+                          ]);
+                        }
+                      })
+                    ]),
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // Trend chart (full)
+                Card(
+                  elevation: 3,
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    height: 360,
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      const Text('Grafik Tren (Hari ini)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 12),
+
+                      // Chart selector
+                      Container(
+                        height: 44,
+                        child: Row(children: [Expanded(child: _perUserChartTab('Suhu', _selectedChartType == 'temperature')), const SizedBox(width: 8), Expanded(child: _perUserChartTab('pH', _selectedChartType == 'ph')), const SizedBox(width: 8), Expanded(child: _perUserChartTab('Oksigen', _selectedChartType == 'oxygen'))]),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Chart area
+                      Expanded(
+                        child: Provider.of<DashboardProvider>(context, listen: false).recentData.isNotEmpty
+                            ? _buildPerUserLineChart(Provider.of<DashboardProvider>(context, listen: false))
+                            : Container(
+                                decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.grey[300]!)),
+                                child: Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.show_chart, size: 48, color: Colors.grey[400]), const SizedBox(height: 8), Text('Tidak ada data sensor', style: TextStyle(color: Colors.grey[600]))]))),
+                      ),
+                    ]),
+                  ),
                 ),
               ],
             ),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 6),
-            action: SnackBarAction(
-              label: 'Salin path',
-              textColor: Colors.white,
-              onPressed: () {
-                Clipboard.setData(ClipboardData(text: savedPath));
-              },
-            ),
           ),
         );
+      }),
+    );
+  }
+
+  Widget _perUserChartTab(String label, bool isSelected) {
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedChartType = label == 'Suhu'
+              ? 'temperature'
+              : label == 'pH'
+                  ? 'ph'
+                  : 'oxygen';
+        });
+      },
+      child: Container(
+        margin: const EdgeInsets.all(2),
+        decoration: BoxDecoration(color: isSelected ? _primaryBlue : Colors.transparent, borderRadius: BorderRadius.circular(6)),
+        child: Center(child: Text(label, style: TextStyle(color: isSelected ? Colors.white : Colors.grey[600], fontSize: 12, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal))),
+      ),
+    );
+  }
+
+  Widget _buildSummaryCard(IconData icon, String title, String value, Color color) {
+    return Card(
+      color: const Color(0xFFF3E8FF),
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+        child: Column(children: [Icon(icon, color: color, size: 26), const SizedBox(height: 6), Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)), const SizedBox(height: 4), Text(title, style: TextStyle(color: Colors.grey[700], fontSize: 13))]),
+      ),
+    );
+  }
+
+  Widget _buildAdminUserCard(Map u) {
+    return Card(
+      color: const Color(0xFFFAF7FF),
+      elevation: 1,
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 12.0),
+        child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+          // Middle: user info
+          Expanded(
+              child: Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(u['name'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
+            const SizedBox(height: 6),
+            Text('Jumlah Alat: ${u['sensors']}', style: TextStyle(color: Colors.grey[700]))
+          ])),
+
+          // Right: show three compact gauge cards (Suhu, pH, Oksigen) for quick admin view
+          Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.end, mainAxisAlignment: MainAxisAlignment.center, children: [
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+        _buildMiniGauge(
+      title: 'Suhu',
+      icon: Icons.thermostat,
+      value: (u['temperature'] as double),
+      unit: '°C',
+      minV: 20,
+      maxV: 35,
+      ranges: GaugeHelper.getTemperatureRanges(),
+      status: GaugeHelper.getTemperatureStatus((u['temperature'] as double)),
+      color: Colors.blueAccent,
+      useThermometer: false,
+      speedometer: true),
+        const SizedBox(width: 8),
+        _buildMiniGauge(
+      title: 'pH',
+      icon: Icons.science,
+      value: (u['ph'] as double),
+      unit: '',
+      minV: 6,
+      maxV: 8.5,
+      ranges: GaugeHelper.getPhRanges(),
+      status: GaugeHelper.getPhStatus((u['ph'] as double)),
+      color: Colors.green,
+      speedometer: true),
+        const SizedBox(width: 8),
+        _buildMiniGauge(
+      title: 'Oksigen',
+      icon: Icons.air,
+      value: (u['oxygen'] as double),
+      unit: 'ppm',
+      minV: 0,
+      maxV: 15,
+      ranges: GaugeHelper.getOxygenRanges(),
+      status: GaugeHelper.getOxygenStatus((u['oxygen'] as double)),
+      color: Colors.orangeAccent,
+      speedometer: true),
+              ]),
+            ),
+            const SizedBox(height: 8),
+            ElevatedButton(onPressed: () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => UserDashboardViewScreen(userId: u['uid'], userName: u['name'], pondId: u['pondId'], pondName: u['pond'])));
+            }, child: const Text('Lihat Dashboard'), style: ElevatedButton.styleFrom(backgroundColor: _primaryBlue, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)), padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8))),
+            const SizedBox(height: 6),
+            TextButton(onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Fungsi Jadikan Admin dipanggil untuk ${u['name']}')));
+            }, child: const Text('Jadikan Admin'))
+          ])
+        ]),
+        ),
+    );
+  }
+
+
+  Widget _buildMiniGauge({required String title, required IconData icon, required double value, String unit = '', required double minV, required double maxV, required List<GaugeRange> ranges, required Map<String, dynamic> status, Color? color, bool useThermometer = false, bool speedometer = false}) {
+    // Circular mini-gauge tile
+    return SizedBox(
+      width: 96,
+      height: 96,
+      child: LayoutBuilder(builder: (ctx, constraints) {
+        // Force the internal column to flex and fit inside 96x96. Use slightly smaller gauges to avoid overflow.
+        final gaugeSize = min(constraints.maxWidth, constraints.maxHeight) * 0.55; // ~52-54px on 96px tile
+        return Column(mainAxisSize: MainAxisSize.min, children: [
+          Flexible(
+            fit: FlexFit.loose,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                if (useThermometer)
+                  SizedBox(width: gaugeSize, height: gaugeSize, child: VeryMiniThermometer(value: value, minValue: minV, maxValue: maxV, size: gaugeSize, color: color ?? Colors.red))
+                else
+            ClipOval(
+              child: Container(
+                width: gaugeSize + 8,
+                height: gaugeSize + 8,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: (color ?? _primaryBlue).withOpacity(0.08), width: 2),
+                  boxShadow: [BoxShadow(color: (color ?? _primaryBlue).withOpacity(0.06), blurRadius: 6, offset: const Offset(0, 2))],
+                  gradient: LinearGradient(colors: [Colors.white, Colors.grey[50]!], begin: Alignment.topCenter, end: Alignment.bottomCenter),
+                ),
+                child: Stack(children: [
+                  Center(child: SizedBox(width: gaugeSize, height: gaugeSize, child: VeryMiniGauge(value: value, minValue: minV, maxValue: maxV, ranges: ranges, size: gaugeSize, unit: unit, needleColor: color, speedometer: speedometer))),
+                  // small top cap indicator for style
+                  Positioned(top: 6, left: 0, right: 0, child: Center(child: Container(width: gaugeSize * 0.12, height: 4, decoration: BoxDecoration(color: (color ?? _primaryBlue).withOpacity(0.9), borderRadius: BorderRadius.circular(2))))),
+                ]),
+              ),
+            ),
+              ]),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(value.toStringAsFixed(value % 1 == 0 ? 0 : 1), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+          const SizedBox(height: 2),
+          Text(status['status'] ?? '', style: TextStyle(color: color ?? status['color'] ?? _primaryBlue, fontSize: 11)),
+        ]);
+      }),
+    );
+  }
+  
+
+  Widget _buildGaugeCard({required String title, required IconData icon, required double value, String unit = '', required double minValue, required double maxValue, required Map<String, dynamic> status, required List<GaugeRange> ranges}) {
+    return Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [Icon(icon, color: _primaryBlue), const SizedBox(width: 8), Text(title, style: const TextStyle(fontWeight: FontWeight.w600))]),
+              const SizedBox(height: 12),
+              ModernGaugeWidget(title: '', value: value, unit: unit, minValue: minValue, maxValue: maxValue, status: status['status'], statusColor: status['color'], icon: icon, ranges: ranges, compact: true, height: 120, speedometer: true),
+              const SizedBox(height: 8),
+              Text(value.toStringAsFixed(value % 1 == 0 ? 0 : 1), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 6),
+              Text(status['status'] ?? '', style: TextStyle(color: status['color'] ?? _primaryBlue))
+            ])));
+  }
+
+  Widget _buildPerUserLineChart(DashboardProvider provider) {
+    // Build a LineChart using provider.recentData; fallback to mock data when empty
+  final data = provider.recentData.isNotEmpty ? provider.recentData : MockDataGenerator.generateDailyMockData(date: DateTime.now(), pondId: widget.pondId ?? 'mock');
+    // pick field
+    final values = <double>[];
+    for (final d in data) {
+      if (_selectedChartType == 'temperature')
+        values.add(d.temperature);
+      else if (_selectedChartType == 'ph')
+        values.add(d.phLevel);
+      else
+        values.add(d.oxygen);
+    }
+
+    final spots = List.generate(values.length, (i) => FlSpot(i.toDouble(), values[i]));
+
+    final minY = (values.isEmpty ? 0.0 : values.reduce(min)) - 1.0;
+    final maxY = (values.isEmpty ? 10.0 : values.reduce(max)) + 1.0;
+
+    return LineChart(LineChartData(
+      gridData: FlGridData(show: true, horizontalInterval: (maxY - minY) / 4),
+      titlesData: FlTitlesData(show: true, bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)), leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true))),
+      borderData: FlBorderData(show: false),
+      minY: minY,
+      maxY: maxY,
+      lineBarsData: [LineChartBarData(spots: spots, isCurved: true, color: _primaryBlue, barWidth: 2, dotData: FlDotData(show: false))],
+    ));
+  }
+
+  Future<void> _generatePDFReport() async {
+    try {
+      _showProgressSnackBar('Membuat laporan PDF...');
+      final String content = 'Laporan Monitoring Kolam Ikan - ${widget.userName ?? ''}\nKolam: ${widget.pondName ?? ''}\nTanggal: ${DateTime.now()}\n\n(Ini adalah file PDF placeholder yang berisi teks. Untuk hasil terbaik gunakan package pdf.)';
+      final Uint8List bytes = Uint8List.fromList(utf8.encode(content));
+      String fileName = 'Laporan_${(widget.userName ?? 'user').replaceAll(' ', '_')}_${DateTime.now().millisecondsSinceEpoch}.pdf';
+      final savedPath = await _saveFileBytes(bytes, fileName, preferDownloads: true);
+      if (savedPath != null) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Row(children: [Icon(Icons.check_circle, color: Colors.white), const SizedBox(width: 8), Expanded(child: Text('Laporan PDF berhasil disimpan di: $savedPath'))]), backgroundColor: Colors.green, duration: const Duration(seconds: 6), action: SnackBarAction(label: 'Salin path', textColor: Colors.white, onPressed: () { Clipboard.setData(ClipboardData(text: savedPath)); })));
       } else {
-        _showErrorSnackBar(
-          'Gagal menyimpan laporan PDF. Coba berikan izin penyimpanan atau cek pengaturan aplikasi.',
-        );
+        _showErrorSnackBar('Gagal menyimpan laporan PDF. Coba berikan izin penyimpanan atau cek pengaturan aplikasi.');
       }
     } catch (e) {
       _showErrorSnackBar('Gagal membuat laporan PDF: ${e.toString()}');
     }
   }
 
-  void _generateExcelReport() async {
+  Future<void> _generateExcelReport() async {
     try {
       _showProgressSnackBar('Membuat laporan Excel...');
-
-      // Buat Excel file
-      var excel = Excel.createExcel();
-      Sheet sheetObject = excel['Sheet1'];
-
-      // Header
-      sheetObject.cell(CellIndex.indexByString("A1")).value = TextCellValue(
-        'Laporan Monitoring Kolam Ikan - ${widget.userName}',
-      );
-      sheetObject.cell(CellIndex.indexByString("A2")).value = TextCellValue(
-        'Kolam: ${widget.pondName}',
-      );
-      sheetObject.cell(CellIndex.indexByString("A3")).value = TextCellValue(
-        'Tanggal: ${DateTime.now().toString().split(' ')[0]}',
-      );
-
-      // Header data
-      sheetObject.cell(CellIndex.indexByString("A5")).value = TextCellValue(
-        'Waktu',
-      );
-      sheetObject.cell(CellIndex.indexByString("B5")).value = TextCellValue(
-        'Suhu (°C)',
-      );
-      sheetObject.cell(CellIndex.indexByString("C5")).value = TextCellValue(
-        'pH',
-      );
-      sheetObject.cell(CellIndex.indexByString("D5")).value = TextCellValue(
-        'Oksigen (ppm)',
-      );
-
-      // Data dummy (dalam implementasi sesungguhnya, ambil dari database)
+      var xls = excel_pkg.Excel.createExcel();
+      excel_pkg.Sheet sheetObject = xls['Sheet1'];
+      sheetObject.cell(excel_pkg.CellIndex.indexByString('A1')).value = excel_pkg.TextCellValue('Laporan Monitoring Kolam Ikan - ${widget.userName ?? ''}');
+      sheetObject.cell(excel_pkg.CellIndex.indexByString('A2')).value = excel_pkg.TextCellValue('Kolam: ${widget.pondName ?? ''}');
+      sheetObject.cell(excel_pkg.CellIndex.indexByString('A3')).value = excel_pkg.TextCellValue('Tanggal: ${DateTime.now().toString().split(' ')[0]}');
+      sheetObject.cell(excel_pkg.CellIndex.indexByString('A5')).value = excel_pkg.TextCellValue('Waktu');
+      sheetObject.cell(excel_pkg.CellIndex.indexByString('B5')).value = excel_pkg.TextCellValue('Suhu (°C)');
+      sheetObject.cell(excel_pkg.CellIndex.indexByString('C5')).value = excel_pkg.TextCellValue('pH');
+      sheetObject.cell(excel_pkg.CellIndex.indexByString('D5')).value = excel_pkg.TextCellValue('Oksigen (ppm)');
       Random random = Random();
       for (int i = 0; i < 24; i++) {
         int row = i + 6;
-        sheetObject
-            .cell(CellIndex.indexByString("A$row"))
-            .value = TextCellValue(
-          '${DateTime.now().subtract(Duration(hours: 23 - i)).hour.toString().padLeft(2, '0')}:00',
-        );
-        sheetObject.cell(CellIndex.indexByString("B$row")).value =
-            TextCellValue((28 + random.nextDouble() * 4).toStringAsFixed(1));
-        sheetObject.cell(CellIndex.indexByString("C$row")).value =
-            TextCellValue((7.0 + random.nextDouble() * 1.5).toStringAsFixed(1));
-        sheetObject.cell(CellIndex.indexByString("D$row")).value =
-            TextCellValue((6 + random.nextDouble() * 2).toStringAsFixed(1));
+        sheetObject.cell(excel_pkg.CellIndex.indexByString('A$row')).value = excel_pkg.TextCellValue('${DateTime.now().subtract(Duration(hours: 23 - i)).hour.toString().padLeft(2, '0')}:00');
+        sheetObject.cell(excel_pkg.CellIndex.indexByString('B$row')).value = excel_pkg.TextCellValue((28 + random.nextDouble() * 4).toStringAsFixed(1));
+        sheetObject.cell(excel_pkg.CellIndex.indexByString('C$row')).value = excel_pkg.TextCellValue((7.0 + random.nextDouble() * 1.5).toStringAsFixed(1));
+        sheetObject.cell(excel_pkg.CellIndex.indexByString('D$row')).value = excel_pkg.TextCellValue((6 + random.nextDouble() * 2).toStringAsFixed(1));
       }
-
-      // Encode excel to bytes
-      final List<int>? encoded = excel.encode();
+      final List<int>? encoded = xls.encode();
       if (encoded == null) {
         _showErrorSnackBar('Gagal membuat file Excel (encoding error)');
         return;
       }
-
-      String fileName =
-          'Laporan_${widget.userName.replaceAll(' ', '_')}_${DateTime.now().millisecondsSinceEpoch}.xlsx';
-      final savedPath = await _saveFileBytes(
-        Uint8List.fromList(encoded),
-        fileName,
-        preferDownloads: true,
-      );
+      String fileName = 'Laporan_${(widget.userName ?? 'user').replaceAll(' ', '_')}_${DateTime.now().millisecondsSinceEpoch}.xlsx';
+      final savedPath = await _saveFileBytes(Uint8List.fromList(encoded), fileName, preferDownloads: true);
       if (savedPath != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Icon(Icons.check_circle, color: Colors.white),
-                SizedBox(width: 8),
-                Expanded(
-                  child: Text('Laporan Excel berhasil disimpan di: $savedPath'),
-                ),
-              ],
-            ),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 6),
-            action: SnackBarAction(
-              label: 'Salin path',
-              textColor: Colors.white,
-              onPressed: () {
-                Clipboard.setData(ClipboardData(text: savedPath));
-              },
-            ),
-          ),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Row(children: [Icon(Icons.check_circle, color: Colors.white), const SizedBox(width: 8), Expanded(child: Text('Laporan Excel berhasil disimpan di: $savedPath'))]), backgroundColor: Colors.green, duration: const Duration(seconds: 6), action: SnackBarAction(label: 'Salin path', textColor: Colors.white, onPressed: () { Clipboard.setData(ClipboardData(text: savedPath)); })));
       } else {
-        _showErrorSnackBar(
-          'Gagal menyimpan laporan Excel. Coba berikan izin penyimpanan atau cek pengaturan aplikasi.',
-        );
+        _showErrorSnackBar('Gagal menyimpan laporan Excel. Coba berikan izin penyimpanan atau cek pengaturan aplikasi.');
       }
     } catch (e) {
       _showErrorSnackBar('Gagal membuat laporan Excel: ${e.toString()}');
     }
   }
 
-  /// Try to save bytes to Downloads (if allowed) else fallback to app documents directory.
-  /// Returns saved file path or null on failure.
-  Future<String?> _saveFileBytes(
-    Uint8List bytes,
-    String fileName, {
-    bool preferDownloads = true,
-  }) async {
+  Future<String?> _saveFileBytes(Uint8List bytes, String fileName, {bool preferDownloads = true}) async {
     try {
       Directory? targetDir;
       if (Platform.isAndroid && preferDownloads) {
-        // Try request permission for storage first
         bool canWriteDownloads = false;
-
         try {
           if (await Permission.manageExternalStorage.isGranted) {
             canWriteDownloads = true;
           } else if (await Permission.storage.isGranted) {
             canWriteDownloads = true;
           } else {
-            // Request storage permission first
             var status = await Permission.storage.request();
             if (status.isGranted) {
               canWriteDownloads = true;
             } else {
-              // If not granted, try manage external storage (Android 11+)
               var mgr = await Permission.manageExternalStorage.request();
               if (mgr.isGranted) canWriteDownloads = true;
             }
           }
         } catch (e) {
-          // Permission check/request might throw on some platforms; ignore and fallback
           canWriteDownloads = false;
         }
 
@@ -753,94 +570,38 @@ class _UserDashboardViewScreenState extends State<UserDashboardViewScreen> {
             if (await downloads.exists()) {
               targetDir = downloads;
             } else {
-              // Fallback to external storage dir
               targetDir = await getExternalStorageDirectory();
             }
-
             if (targetDir != null) {
               final file = File('${targetDir.path}/$fileName');
               await file.writeAsBytes(bytes);
               return file.path;
             }
           } catch (e) {
-            // failed to write to Downloads; will fallback
+            // ignore and fallback
           }
         }
       }
 
-      // Fallback: save to app documents directory (no special permission required)
       try {
         final appDocDir = await getApplicationDocumentsDirectory();
         final file = File('${appDocDir.path}/$fileName');
         await file.writeAsBytes(bytes);
         return file.path;
       } catch (e) {
-        // give up
+        return null;
       }
-
-      return null;
     } catch (e) {
       return null;
     }
   }
 
   void _showProgressSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-              ),
-            ),
-            SizedBox(width: 12),
-            Text(message),
-          ],
-        ),
-        backgroundColor: Colors.orange,
-        duration: Duration(seconds: 2),
-      ),
-    );
-  }
-
-  void _showSuccessSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(Icons.check_circle, color: Colors.white),
-            SizedBox(width: 8),
-            Expanded(child: Text(message)),
-          ],
-        ),
-        backgroundColor: Colors.green,
-        duration: Duration(seconds: 4),
-        action: SnackBarAction(
-          label: 'OK',
-          textColor: Colors.white,
-          onPressed: () {},
-        ),
-      ),
-    );
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Row(children: [SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation<Color>(Colors.white))), const SizedBox(width: 12), Text(message)]), backgroundColor: Colors.orange, duration: const Duration(seconds: 2)));
   }
 
   void _showErrorSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(Icons.error, color: Colors.white),
-            SizedBox(width: 8),
-            Expanded(child: Text(message)),
-          ],
-        ),
-        backgroundColor: Colors.red,
-        duration: Duration(seconds: 4),
-      ),
-    );
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Row(children: [Icon(Icons.error, color: Colors.white), const SizedBox(width: 8), Expanded(child: Text(message))]), backgroundColor: Colors.red, duration: const Duration(seconds: 4)));
   }
 }
+

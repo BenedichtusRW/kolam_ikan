@@ -11,6 +11,8 @@ import 'package:flutter/services.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../providers/history_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/report_provider.dart';
+import '../../models/report.dart';
 import '../../utils/mock_data_generator.dart';
 import '../../models/sensor_data.dart';
 import '../admin/user_list_screen.dart';
@@ -28,6 +30,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
   List<String> _availablePonds = ['pond_001', 'pond_002', 'pond_003'];
   String _selectedPondForAdmin = 'pond_001';
   static const String _allPondsKey = 'ALL_PONDS';
+  // report input state
+  double? _tempValue = 0.0;
+  double? _phValue = 7.0;
+  double? _oxyValue = 5.0;
 
   @override
   void initState() {
@@ -35,8 +41,27 @@ class _HistoryScreenState extends State<HistoryScreen> {
     _selectedDate = DateTime.now();
     // Enable testing mode so selecting a date returns mock data for development/demo
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final historyProvider = Provider.of<HistoryProvider>(context, listen: false);
+      final historyProvider = Provider.of<HistoryProvider>(
+        context,
+        listen: false,
+      );
       historyProvider.enableTestingMode();
+      // If user is non-admin, check if report is due and prompt
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+      final rp = Provider.of<ReportProvider>(context, listen: false);
+      if (!(auth.userProfile?.isAdmin ?? false) &&
+          auth.userProfile?.uid != null) {
+        final uid = auth.userProfile!.uid;
+        rp.getLastReportTimeForUser(uid).then((_) async {
+          final due = await rp.isReportDue(uid);
+          if (due) {
+            // Show mandatory report dialog
+            WidgetsBinding.instance.addPostFrameCallback((__) {
+              _showMandatoryReportDialog(context, auth.userProfile!, rp);
+            });
+          }
+        });
+      }
     });
   }
 
@@ -48,26 +73,32 @@ class _HistoryScreenState extends State<HistoryScreen> {
       lastDate: DateTime.now(),
       locale: Locale('id', 'ID'), // Indonesian locale
     );
-    
+
     if (picked != null && picked != _selectedDate) {
       setState(() {
         _selectedDate = picked;
       });
-      
+
       // Fetch data untuk tanggal yang dipilih
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final historyProvider = Provider.of<HistoryProvider>(context, listen: false);
-      
+      final historyProvider = Provider.of<HistoryProvider>(
+        context,
+        listen: false,
+      );
+
       if (authProvider.userProfile?.pondId != null) {
         // normal user: fetch their pond
         await historyProvider.fetchHistoryData(
-          picked, 
-          authProvider.userProfile!.pondId!
+          picked,
+          authProvider.userProfile!.pondId!,
         );
       } else {
         // No authenticated pondId available (development/test).
         // If admin view and selected pond is specific, load that; otherwise load default mock.
-        await historyProvider.fetchMockHistoryData(picked, _selectedPondForAdmin);
+        await historyProvider.fetchMockHistoryData(
+          picked,
+          _selectedPondForAdmin,
+        );
       }
     }
   }
@@ -86,9 +117,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
           Consumer<HistoryProvider>(
             builder: (context, historyProvider, child) {
               // If admin selected 'All Ponds', pressing download should open the user list view
-              final authProviderLocal = Provider.of<AuthProvider>(context, listen: false);
-              final isAdminLocal = authProviderLocal.userProfile?.isAdmin ?? false;
-              final isAllPondsSelected = isAdminLocal && _selectedPondForAdmin == _allPondsKey;
+              final authProviderLocal = Provider.of<AuthProvider>(
+                context,
+                listen: false,
+              );
+              final isAdminLocal =
+                  authProviderLocal.userProfile?.isAdmin ?? false;
+              final isAllPondsSelected =
+                  isAdminLocal && _selectedPondForAdmin == _allPondsKey;
 
               return IconButton(
                 icon: Icon(Icons.download_rounded),
@@ -99,8 +135,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           MaterialPageRoute(builder: (_) => UserListScreen()),
                         );
                       }
-                    : (historyProvider.historyData.isNotEmpty ? () => _showExportDialog(historyProvider) : null),
-                tooltip: isAllPondsSelected ? 'Lihat semua user' : 'Export laporan',
+                    : (historyProvider.historyData.isNotEmpty
+                          ? () => _showExportDialog(historyProvider)
+                          : null),
+                tooltip: isAllPondsSelected
+                    ? 'Lihat semua user'
+                    : 'Export laporan',
               );
             },
           ),
@@ -123,16 +163,26 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         children: [
                           Icon(Icons.pool, color: Colors.blue),
                           SizedBox(width: 12),
-                          Text('Pilih Kolam (Admin):', style: TextStyle(fontWeight: FontWeight.w600)),
+                          Text(
+                            'Pilih Kolam (Admin):',
+                            style: TextStyle(fontWeight: FontWeight.w600),
+                          ),
                           SizedBox(width: 12),
                           DropdownButton<String>(
                             value: _selectedPondForAdmin,
                             items: [
-                              ..._availablePonds.map((p) => DropdownMenuItem(value: p, child: Text(p))),
-                              DropdownMenuItem(value: _allPondsKey, child: Text('Semua Kolam')),
+                              ..._availablePonds.map(
+                                (p) =>
+                                    DropdownMenuItem(value: p, child: Text(p)),
+                              ),
+                              DropdownMenuItem(
+                                value: _allPondsKey,
+                                child: Text('Semua Kolam'),
+                              ),
                             ],
                             onChanged: (v) {
-                              if (v != null) setState(() => _selectedPondForAdmin = v);
+                              if (v != null)
+                                setState(() => _selectedPondForAdmin = v);
                             },
                           ),
                         ],
@@ -147,13 +197,26 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       itemCount: _availablePonds.length,
                       itemBuilder: (context, index) {
                         final pid = _availablePonds[index];
-                        final mockData = MockDataGenerator.generateDailyMockData(date: _selectedDate ?? DateTime.now(), pondId: pid, dataPointsPerHour: 6);
+                        final mockData =
+                            MockDataGenerator.generateDailyMockData(
+                              date: _selectedDate ?? DateTime.now(),
+                              pondId: pid,
+                              dataPointsPerHour: 6,
+                            );
                         // calculate small stats
                         double avgTemp = 0;
                         double avgOxy = 0;
                         if (mockData.isNotEmpty) {
-                          avgTemp = mockData.map((m) => m.temperature).reduce((a, b) => a + b) / mockData.length;
-                          avgOxy = mockData.map((m) => m.oxygen).reduce((a, b) => a + b) / mockData.length;
+                          avgTemp =
+                              mockData
+                                  .map((m) => m.temperature)
+                                  .reduce((a, b) => a + b) /
+                              mockData.length;
+                          avgOxy =
+                              mockData
+                                  .map((m) => m.oxygen)
+                                  .reduce((a, b) => a + b) /
+                              mockData.length;
                         }
 
                         return Card(
@@ -165,20 +228,38 @@ class _HistoryScreenState extends State<HistoryScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text('Kolam: $pid', style: TextStyle(fontWeight: FontWeight.bold)),
+                                    Text(
+                                      'Kolam: $pid',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
                                     Row(
                                       children: [
                                         IconButton(
-                                          icon: Icon(Icons.picture_as_pdf, color: Colors.red),
+                                          icon: Icon(
+                                            Icons.picture_as_pdf,
+                                            color: Colors.red,
+                                          ),
                                           tooltip: 'Download PDF untuk $pid',
-                                          onPressed: () => _generatePDFReport(historyProvider, pondIdsOverride: [pid]),
+                                          onPressed: () => _generatePDFReport(
+                                            historyProvider,
+                                            pondIdsOverride: [pid],
+                                          ),
                                         ),
                                         IconButton(
-                                          icon: Icon(Icons.table_chart, color: Colors.green),
+                                          icon: Icon(
+                                            Icons.table_chart,
+                                            color: Colors.green,
+                                          ),
                                           tooltip: 'Download Excel untuk $pid',
-                                          onPressed: () => _generateExcelReport(historyProvider, pondIdsOverride: [pid]),
+                                          onPressed: () => _generateExcelReport(
+                                            historyProvider,
+                                            pondIdsOverride: [pid],
+                                          ),
                                         ),
                                       ],
                                     ),
@@ -187,13 +268,26 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                 SizedBox(height: 8),
                                 SizedBox(
                                   height: 180,
-                                  child: _miniChartForData(mockData, _primaryColor, 'Suhu', 'temperature'),
+                                  child: _miniChartForData(
+                                    mockData,
+                                    _primaryColor,
+                                    'Suhu',
+                                    'temperature',
+                                  ),
                                 ),
                                 SizedBox(height: 8),
                                 Row(
                                   children: [
-                                    Expanded(child: Text('Suhu rata-rata: ${avgTemp.toStringAsFixed(1)}°C')),
-                                    Expanded(child: Text('Oksigen rata-rata: ${avgOxy.toStringAsFixed(1)} ppm')),
+                                    Expanded(
+                                      child: Text(
+                                        'Suhu rata-rata: ${avgTemp.toStringAsFixed(1)}°C',
+                                      ),
+                                    ),
+                                    Expanded(
+                                      child: Text(
+                                        'Oksigen rata-rata: ${avgOxy.toStringAsFixed(1)} ppm',
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ],
@@ -232,9 +326,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
                               ),
                               SizedBox(height: 4),
                               Text(
-                                _selectedDate != null 
-                                  ? _formatDate(_selectedDate!)
-                                  : 'Belum dipilih',
+                                _selectedDate != null
+                                    ? _formatDate(_selectedDate!)
+                                    : 'Belum dipilih',
                                 style: TextStyle(
                                   color: Colors.grey[600],
                                   fontSize: 14,
@@ -246,7 +340,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         ElevatedButton(
                           onPressed: _selectDate,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color.fromARGB(255, 57, 73, 171),
+                            backgroundColor: const Color.fromARGB(
+                              255,
+                              57,
+                              73,
+                              171,
+                            ),
                             foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
@@ -260,6 +359,162 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 ),
                 SizedBox(height: 20),
 
+                // Reporting card - users can submit a report (once per hour enforced by provider)
+                Card(
+                  elevation: 2,
+                  child: Padding(
+                    padding: EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Lapor Manual (User)',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            TextButton(
+                              onPressed: () async {
+                                // Admin shortcut: open admin reports screen
+                                final auth = Provider.of<AuthProvider>(
+                                  context,
+                                  listen: false,
+                                );
+                                if (auth.userProfile?.isAdmin ?? false) {
+                                  Navigator.pushNamed(
+                                    context,
+                                    '/admin-reports',
+                                  );
+                                }
+                              },
+                              child: Text('Lihat Laporan'),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 8),
+                        // If the current user is admin, they should not be able to submit reports — only view them.
+                        if (!isAdmin) ...[
+                          // Inputs
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _NumberField(
+                                  label: 'Suhu (°C)',
+                                  initial: 0.0,
+                                  onChanged: (v) => _tempValue = v,
+                                ),
+                              ),
+                              SizedBox(width: 8),
+                              Expanded(
+                                child: _NumberField(
+                                  label: 'pH',
+                                  initial: 7.0,
+                                  onChanged: (v) => _phValue = v,
+                                ),
+                              ),
+                              SizedBox(width: 8),
+                              Expanded(
+                                child: _NumberField(
+                                  label: 'Oksigen',
+                                  initial: 5.0,
+                                  onChanged: (v) => _oxyValue = v,
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 8),
+                          Consumer2<AuthProvider, ReportProvider>(
+                            builder: (context, auth, reportProv, child) {
+                              return ElevatedButton.icon(
+                                icon: reportProv.isLoading
+                                    ? SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Colors.black,
+                                        ),
+                                      )
+                                    : Icon(Icons.send, color: Colors.black),
+                                label: Text(
+                                  'Kirim Laporan',
+                                  style: TextStyle(color: Colors.black),
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.white,
+                                  foregroundColor: Colors.black,
+                                ),
+                                onPressed: reportProv.isLoading
+                                    ? null
+                                    : () async {
+                                        final user = auth.userProfile;
+                                        if (user == null) {
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                'Harap login terlebih dahulu',
+                                              ),
+                                            ),
+                                          );
+                                          return;
+                                        }
+
+                                        final pondId =
+                                            user.pondId ??
+                                            _selectedPondForAdmin;
+                                        final report = Report(
+                                          userId: user.uid,
+                                          userName: user.name,
+                                          pondId: pondId,
+                                          timestamp: DateTime.now().toUtc(),
+                                          temperature: _tempValue ?? 0.0,
+                                          ph: _phValue ?? 0.0,
+                                          oxygen: _oxyValue ?? 0.0,
+                                        );
+
+                                        final ok = await reportProv
+                                            .submitReport(report);
+                                        if (ok) {
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            SnackBar(
+                                              content: Text('Laporan terkirim'),
+                                            ),
+                                          );
+                                        } else {
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                reportProv.errorMessage ??
+                                                    'Gagal mengirim laporan',
+                                              ),
+                                            ),
+                                          );
+                                        }
+                                      },
+                              );
+                            },
+                          ),
+                        ] else ...[
+                          Padding(
+                            padding: EdgeInsets.symmetric(vertical: 8),
+                            child: Text(
+                              'Admin hanya menerima laporan — gunakan tombol "Lihat Laporan" untuk melihat laporan user.',
+                              style: TextStyle(color: Colors.grey[700]),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+
                 // Loading state
                 if (historyProvider.isLoading)
                   Expanded(
@@ -268,7 +523,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation(const Color.fromARGB(255, 57, 73, 171)),
+                            valueColor: AlwaysStoppedAnimation(
+                              const Color.fromARGB(255, 57, 73, 171),
+                            ),
                           ),
                           SizedBox(height: 16),
                           Text('Memuat data riwayat...'),
@@ -276,7 +533,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       ),
                     ),
                   )
-                
                 // Error state
                 else if (historyProvider.errorMessage != null)
                   Expanded(
@@ -308,11 +564,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
                             onPressed: () {
                               historyProvider.clearError();
                               if (_selectedDate != null) {
-                                final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                                final authProvider = Provider.of<AuthProvider>(
+                                  context,
+                                  listen: false,
+                                );
                                 if (authProvider.userProfile?.pondId != null) {
                                   historyProvider.fetchHistoryData(
-                                    _selectedDate!, 
-                                    authProvider.userProfile!.pondId!
+                                    _selectedDate!,
+                                    authProvider.userProfile!.pondId!,
                                   );
                                 }
                               }
@@ -323,9 +582,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       ),
                     ),
                   )
-                
                 // Data display
-                else if (historyProvider.historyData.isEmpty && _selectedDate != null)
+                else if (historyProvider.historyData.isEmpty &&
+                    _selectedDate != null)
                   Expanded(
                     child: Center(
                       child: Column(
@@ -353,7 +612,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       ),
                     ),
                   )
-                
                 // Content with data
                 else if (historyProvider.historyData.isNotEmpty)
                   Expanded(
@@ -448,45 +706,59 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                     ),
                                     child: Row(
                                       children: [
-                                        _buildChartTab('Suhu', _selectedChartType == 'temperature'),
-                                        _buildChartTab('pH', _selectedChartType == 'ph'),
-                                        _buildChartTab('Oksigen', _selectedChartType == 'oxygen'),
+                                        _buildChartTab(
+                                          'Suhu',
+                                          _selectedChartType == 'temperature',
+                                        ),
+                                        _buildChartTab(
+                                          'pH',
+                                          _selectedChartType == 'ph',
+                                        ),
+                                        _buildChartTab(
+                                          'Oksigen',
+                                          _selectedChartType == 'oxygen',
+                                        ),
                                       ],
                                     ),
                                   ),
                                   SizedBox(height: 16),
-                                  
+
                                   // Chart area
                                   Expanded(
-                                    child: historyProvider.historyData.isNotEmpty 
-                                      ? _buildLineChart(historyProvider)
-                                      : Container(
-                                          decoration: BoxDecoration(
-                                            color: Colors.grey[100],
-                                            borderRadius: BorderRadius.circular(8),
-                                            border: Border.all(color: Colors.grey[300]!),
-                                          ),
-                                          child: Center(
-                                            child: Column(
-                                              mainAxisAlignment: MainAxisAlignment.center,
-                                              children: [
-                                                Icon(
-                                                  Icons.show_chart,
-                                                  size: 48,
-                                                  color: Colors.grey[400],
-                                                ),
-                                                SizedBox(height: 8),
-                                                Text(
-                                                  'Pilih tanggal untuk melihat grafik',
-                                                  style: TextStyle(
-                                                    color: Colors.grey[600],
-                                                    fontSize: 14,
+                                    child:
+                                        historyProvider.historyData.isNotEmpty
+                                        ? _buildLineChart(historyProvider)
+                                        : Container(
+                                            decoration: BoxDecoration(
+                                              color: Colors.grey[100],
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                              border: Border.all(
+                                                color: Colors.grey[300]!,
+                                              ),
+                                            ),
+                                            child: Center(
+                                              child: Column(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.center,
+                                                children: [
+                                                  Icon(
+                                                    Icons.show_chart,
+                                                    size: 48,
+                                                    color: Colors.grey[400],
                                                   ),
-                                                ),
-                                              ],
+                                                  SizedBox(height: 8),
+                                                  Text(
+                                                    'Pilih tanggal untuk melihat grafik',
+                                                    style: TextStyle(
+                                                      color: Colors.grey[600],
+                                                      fontSize: 14,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
                                             ),
                                           ),
-                                        ),
                                   ),
                                 ],
                               ),
@@ -496,7 +768,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       ),
                     ),
                   )
-                
                 // Initial state
                 else
                   Expanded(
@@ -536,7 +807,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
         return AlertDialog(
           title: Row(
             children: [
-              Icon(Icons.download_rounded, color: const Color.fromARGB(255, 57, 73, 171)),
+              Icon(
+                Icons.download_rounded,
+                color: const Color.fromARGB(255, 57, 73, 171),
+              ),
               SizedBox(width: 8),
               Text('Export Laporan'),
             ],
@@ -563,26 +837,38 @@ class _HistoryScreenState extends State<HistoryScreen> {
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.of(context).pop(), child: Text('Batal')),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('Batal'),
+            ),
           ],
         );
       },
     );
   }
 
-  Future<void> _generatePDFReport(HistoryProvider provider, {List<String>? pondIdsOverride}) async {
+  Future<void> _generatePDFReport(
+    HistoryProvider provider, {
+    List<String>? pondIdsOverride,
+  }) async {
     try {
       _showProgressSnackBar('Membuat laporan PDF...');
 
       // Simple text-based PDF placeholder
       final buffer = StringBuffer();
-      buffer.writeln('Laporan Riwayat - ${_formatDate(_selectedDate ?? DateTime.now())}');
-      buffer.writeln('Kolam: ${provider.historyData.isNotEmpty ? provider.historyData.first.pondId : ''}');
+      buffer.writeln(
+        'Laporan Riwayat - ${_formatDate(_selectedDate ?? DateTime.now())}',
+      );
+      buffer.writeln(
+        'Kolam: ${provider.historyData.isNotEmpty ? provider.historyData.first.pondId : ''}',
+      );
       buffer.writeln('User: -');
       buffer.writeln('');
       buffer.writeln('Waktu,Suhu,pH,Oksigen');
       for (final d in provider.historyData) {
-        buffer.writeln('${d.timestamp.toIso8601String()},${d.temperature.toStringAsFixed(2)},${d.phLevel.toStringAsFixed(2)},${d.oxygen.toStringAsFixed(2)}');
+        buffer.writeln(
+          '${d.timestamp.toIso8601String()},${d.temperature.toStringAsFixed(2)},${d.phLevel.toStringAsFixed(2)},${d.oxygen.toStringAsFixed(2)}',
+        );
       }
 
       // Determine pond scope
@@ -590,24 +876,38 @@ class _HistoryScreenState extends State<HistoryScreen> {
       List<String> pondIdsToExport;
       if (pondIdsOverride != null) {
         pondIdsToExport = pondIdsOverride;
-      } else if (authProvider.userProfile?.isAdmin ?? false && _selectedPondForAdmin == _allPondsKey) {
-        pondIdsToExport = _availablePonds;
       } else {
-        final scopePondId = authProvider.userProfile?.pondId ?? _selectedPondForAdmin;
-        pondIdsToExport = [scopePondId];
+        final isAdminUser = authProvider.userProfile?.isAdmin ?? false;
+        if (isAdminUser && _selectedPondForAdmin == _allPondsKey) {
+          pondIdsToExport = _availablePonds;
+        } else if (isAdminUser) {
+          pondIdsToExport = [_selectedPondForAdmin];
+        } else {
+          final scopePondId =
+              authProvider.userProfile?.pondId ?? _selectedPondForAdmin;
+          pondIdsToExport = [scopePondId];
+        }
       }
 
       // If provider.historyData is empty or we're exporting 'all', build CSV-like content from mock data
       String content;
       if (pondIdsToExport.length > 1 || provider.historyData.isEmpty) {
         final sb = StringBuffer();
-        sb.writeln('Laporan Riwayat Gabungan - ${_formatDate(_selectedDate ?? DateTime.now())}');
+        sb.writeln(
+          'Laporan Riwayat Gabungan - ${_formatDate(_selectedDate ?? DateTime.now())}',
+        );
         for (final pid in pondIdsToExport) {
-          final mock = MockDataGenerator.generateDailyMockData(date: _selectedDate ?? DateTime.now(), pondId: pid, dataPointsPerHour: 6);
+          final mock = MockDataGenerator.generateDailyMockData(
+            date: _selectedDate ?? DateTime.now(),
+            pondId: pid,
+            dataPointsPerHour: 6,
+          );
           sb.writeln('\nKolam: $pid');
           sb.writeln('Waktu,Suhu,pH,Oksigen');
           for (final d in mock) {
-            sb.writeln('${d.timestamp.toIso8601String()},${d.temperature.toStringAsFixed(2)},${d.phLevel.toStringAsFixed(2)},${d.oxygen.toStringAsFixed(2)}');
+            sb.writeln(
+              '${d.timestamp.toIso8601String()},${d.temperature.toStringAsFixed(2)},${d.phLevel.toStringAsFixed(2)},${d.oxygen.toStringAsFixed(2)}',
+            );
           }
         }
         content = sb.toString();
@@ -616,13 +916,18 @@ class _HistoryScreenState extends State<HistoryScreen> {
       }
 
       final Uint8List bytes = Uint8List.fromList(utf8.encode(content));
-      final String fileName = 'Laporan_History_${(_selectedDate ?? DateTime.now()).millisecondsSinceEpoch}.pdf';
+      final String fileName =
+          'Laporan_History_${(_selectedDate ?? DateTime.now()).millisecondsSinceEpoch}.pdf';
       final saved = await _saveFileBytes(bytes, fileName);
 
       if (saved != null) {
-        _showSuccessSnackBarWithAction('Laporan PDF disimpan: $saved', 'Copy path', () {
-          Clipboard.setData(ClipboardData(text: saved));
-        });
+        _showSuccessSnackBarWithAction(
+          'Laporan PDF disimpan: $saved',
+          'Copy path',
+          () {
+            Clipboard.setData(ClipboardData(text: saved));
+          },
+        );
       } else {
         _showErrorSnackBar('Gagal menyimpan PDF. Periksa izin penyimpanan.');
       }
@@ -631,19 +936,25 @@ class _HistoryScreenState extends State<HistoryScreen> {
     }
   }
 
-  Future<void> _generateExcelReport(HistoryProvider provider, {List<String>? pondIdsOverride}) async {
+  Future<void> _generateExcelReport(
+    HistoryProvider provider, {
+    List<String>? pondIdsOverride,
+  }) async {
     try {
       _showProgressSnackBar('Membuat laporan Excel...');
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       List<String> pondIdsToExport;
       if (pondIdsOverride != null) {
         pondIdsToExport = pondIdsOverride;
-      } else if (authProvider.userProfile?.isAdmin ?? false && _selectedPondForAdmin == _allPondsKey) {
-        pondIdsToExport = _availablePonds;
-      } else if (authProvider.userProfile?.isAdmin ?? false) {
-        pondIdsToExport = [_selectedPondForAdmin];
       } else {
-        pondIdsToExport = [authProvider.userProfile?.pondId ?? 'pond_001'];
+        final isAdminUser = authProvider.userProfile?.isAdmin ?? false;
+        if (isAdminUser && _selectedPondForAdmin == _allPondsKey) {
+          pondIdsToExport = _availablePonds;
+        } else if (isAdminUser) {
+          pondIdsToExport = [_selectedPondForAdmin];
+        } else {
+          pondIdsToExport = [authProvider.userProfile?.pondId ?? 'pond_001'];
+        }
       }
 
       var excel = excel_pkg.Excel.createExcel();
@@ -651,28 +962,45 @@ class _HistoryScreenState extends State<HistoryScreen> {
         final sheetName = pondIdsToExport.length == 1 ? 'Sheet1' : 'Pond_$pid';
         excel_pkg.Sheet sheet = excel[sheetName];
 
-        sheet.cell(excel_pkg.CellIndex.indexByString('A1')).value = excel_pkg.TextCellValue('Laporan Riwayat - $pid');
-        sheet.cell(excel_pkg.CellIndex.indexByString('A2')).value = excel_pkg.TextCellValue('Tanggal: ${_formatDate(_selectedDate ?? DateTime.now())}');
-        sheet.cell(excel_pkg.CellIndex.indexByString('A4')).value = excel_pkg.TextCellValue('Waktu');
-        sheet.cell(excel_pkg.CellIndex.indexByString('B4')).value = excel_pkg.TextCellValue('Suhu (°C)');
-        sheet.cell(excel_pkg.CellIndex.indexByString('C4')).value = excel_pkg.TextCellValue('pH');
-        sheet.cell(excel_pkg.CellIndex.indexByString('D4')).value = excel_pkg.TextCellValue('Oksigen');
+        sheet.cell(excel_pkg.CellIndex.indexByString('A1')).value =
+            excel_pkg.TextCellValue('Laporan Riwayat - $pid');
+        sheet
+            .cell(excel_pkg.CellIndex.indexByString('A2'))
+            .value = excel_pkg.TextCellValue(
+          'Tanggal: ${_formatDate(_selectedDate ?? DateTime.now())}',
+        );
+        sheet.cell(excel_pkg.CellIndex.indexByString('A4')).value =
+            excel_pkg.TextCellValue('Waktu');
+        sheet.cell(excel_pkg.CellIndex.indexByString('B4')).value =
+            excel_pkg.TextCellValue('Suhu (°C)');
+        sheet.cell(excel_pkg.CellIndex.indexByString('C4')).value =
+            excel_pkg.TextCellValue('pH');
+        sheet.cell(excel_pkg.CellIndex.indexByString('D4')).value =
+            excel_pkg.TextCellValue('Oksigen');
 
         List<SensorData> dataList;
         if (provider.historyData.isNotEmpty && pondIdsToExport.length == 1) {
           dataList = provider.historyData;
         } else {
-          dataList = MockDataGenerator.generateDailyMockData(date: _selectedDate ?? DateTime.now(), pondId: pid, dataPointsPerHour: 6);
+          dataList = MockDataGenerator.generateDailyMockData(
+            date: _selectedDate ?? DateTime.now(),
+            pondId: pid,
+            dataPointsPerHour: 6,
+          );
         }
 
         for (int i = 0; i < dataList.length; i++) {
           final row = i + 5;
           final d = dataList[i];
-          sheet.cell(excel_pkg.CellIndex.indexByString('A$row')).value = excel_pkg.TextCellValue(d.timestamp.toIso8601String());
-          sheet.cell(excel_pkg.CellIndex.indexByString('B$row')).value = excel_pkg.TextCellValue(d.temperature.toStringAsFixed(2));
-          sheet.cell(excel_pkg.CellIndex.indexByString('C$row')).value = excel_pkg.TextCellValue(d.phLevel.toStringAsFixed(2));
-          sheet.cell(excel_pkg.CellIndex.indexByString('D$row')).value = excel_pkg.TextCellValue(d.oxygen.toStringAsFixed(2));
-  }
+          sheet.cell(excel_pkg.CellIndex.indexByString('A$row')).value =
+              excel_pkg.TextCellValue(d.timestamp.toIso8601String());
+          sheet.cell(excel_pkg.CellIndex.indexByString('B$row')).value =
+              excel_pkg.TextCellValue(d.temperature.toStringAsFixed(2));
+          sheet.cell(excel_pkg.CellIndex.indexByString('C$row')).value =
+              excel_pkg.TextCellValue(d.phLevel.toStringAsFixed(2));
+          sheet.cell(excel_pkg.CellIndex.indexByString('D$row')).value =
+              excel_pkg.TextCellValue(d.oxygen.toStringAsFixed(2));
+        }
       }
 
       final List<int>? encoded = excel.encode();
@@ -682,12 +1010,17 @@ class _HistoryScreenState extends State<HistoryScreen> {
       }
 
       final bytes = Uint8List.fromList(encoded);
-      final fileName = 'Laporan_History_${(_selectedDate ?? DateTime.now()).millisecondsSinceEpoch}.xlsx';
+      final fileName =
+          'Laporan_History_${(_selectedDate ?? DateTime.now()).millisecondsSinceEpoch}.xlsx';
       final saved = await _saveFileBytes(bytes, fileName);
       if (saved != null) {
-        _showSuccessSnackBarWithAction('Laporan Excel disimpan: $saved', 'Copy path', () {
-          Clipboard.setData(ClipboardData(text: saved));
-        });
+        _showSuccessSnackBarWithAction(
+          'Laporan Excel disimpan: $saved',
+          'Copy path',
+          () {
+            Clipboard.setData(ClipboardData(text: saved));
+          },
+        );
       } else {
         _showErrorSnackBar('Gagal menyimpan Excel. Periksa izin penyimpanan.');
       }
@@ -702,10 +1035,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
       if (Platform.isAndroid) {
         bool canWrite = false;
         try {
-          if (await Permission.storage.isGranted) canWrite = true;
+          if (await Permission.storage.isGranted)
+            canWrite = true;
           else {
             final status = await Permission.storage.request();
-            if (status.isGranted) canWrite = true;
+            if (status.isGranted)
+              canWrite = true;
             else {
               final mgr = await Permission.manageExternalStorage.request();
               if (mgr.isGranted) canWrite = true;
@@ -743,7 +1078,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
     }
   }
 
-  void _showSuccessSnackBarWithAction(String message, String actionLabel, VoidCallback onAction) {
+  void _showSuccessSnackBarWithAction(
+    String message,
+    String actionLabel,
+    VoidCallback onAction,
+  ) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
@@ -759,7 +1098,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
       SnackBar(
         content: Row(
           children: [
-            SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation(Colors.white))),
+            SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation(Colors.white),
+              ),
+            ),
             SizedBox(width: 12),
             Expanded(child: Text(message)),
           ],
@@ -786,12 +1132,15 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
+  Widget _buildStatCard(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Card(
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       child: Padding(
         padding: EdgeInsets.all(12),
         child: Column(
@@ -804,10 +1153,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 Expanded(
                   child: Text(
                     title,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -832,10 +1178,20 @@ class _HistoryScreenState extends State<HistoryScreen> {
   String _formatDate(DateTime date) {
     // TODO: Use intl package for better localization
     List<String> months = [
-      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+      'Januari',
+      'Februari',
+      'Maret',
+      'April',
+      'Mei',
+      'Juni',
+      'Juli',
+      'Agustus',
+      'September',
+      'Oktober',
+      'November',
+      'Desember',
     ];
-    
+
     return '${date.day} ${months[date.month - 1]} ${date.year}';
   }
 
@@ -861,7 +1217,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
         child: Container(
           margin: EdgeInsets.all(2),
           decoration: BoxDecoration(
-            color: isSelected ? const Color.fromARGB(255, 57, 73, 171) : Colors.transparent,
+            color: isSelected
+                ? const Color.fromARGB(255, 57, 73, 171)
+                : Colors.transparent,
             borderRadius: BorderRadius.circular(6),
           ),
           child: Center(
@@ -938,14 +1296,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
           show: true,
           drawHorizontalLine: true,
           drawVerticalLine: true,
-          getDrawingHorizontalLine: (value) => FlLine(
-            color: Colors.grey[300]!,
-            strokeWidth: 1,
-          ),
-          getDrawingVerticalLine: (value) => FlLine(
-            color: Colors.grey[300]!,
-            strokeWidth: 1,
-          ),
+          getDrawingHorizontalLine: (value) =>
+              FlLine(color: Colors.grey[300]!, strokeWidth: 1),
+          getDrawingVerticalLine: (value) =>
+              FlLine(color: Colors.grey[300]!, strokeWidth: 1),
         ),
         titlesData: FlTitlesData(
           show: true,
@@ -961,10 +1315,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 if (hour >= 8 && hour <= 17) {
                   return Text(
                     '${hour.toString().padLeft(2, '0')}:00',
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 10,
-                    ),
+                    style: TextStyle(color: Colors.grey[600], fontSize: 10),
                   );
                 }
                 return Text('');
@@ -978,10 +1329,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
               getTitlesWidget: (double value, TitleMeta meta) {
                 return Text(
                   value.toStringAsFixed(1),
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 10,
-                  ),
+                  style: TextStyle(color: Colors.grey[600], fontSize: 10),
                 );
               },
             ),
@@ -1045,47 +1393,187 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 }
 
-  // Small helper to render a compact line chart for mini previews
-  Widget _miniChartForData(List<SensorData> data, Color color, String label, String chartType) {
-    if (data.isEmpty) {
-      return Center(child: Text('No data', style: TextStyle(color: Colors.grey[600])));
-    }
+// Small numeric input helper used in reporting UI
+class _NumberField extends StatefulWidget {
+  final String label;
+  final double initial;
+  final ValueChanged<double?> onChanged;
 
-    List<FlSpot> spots = [];
-    for (int i = 0; i < data.length; i++) {
-      final d = data[i];
-      final x = i.toDouble();
-      double y;
-      switch (chartType) {
-        case 'ph':
-          y = d.phLevel;
-          break;
-        case 'oxygen':
-          y = d.oxygen;
-          break;
-        default:
-          y = d.temperature;
-      }
-      spots.add(FlSpot(x, y));
-    }
+  const _NumberField({
+    required this.label,
+    required this.initial,
+    required this.onChanged,
+  });
 
-    return LineChart(
-      LineChartData(
-        gridData: FlGridData(show: false),
-        titlesData: FlTitlesData(show: false),
-        borderData: FlBorderData(show: false),
-        minX: 0,
-        maxX: data.length > 1 ? (data.length - 1).toDouble() : 1,
-        lineBarsData: [
-          LineChartBarData(
-            spots: spots,
-            isCurved: true,
-            color: color,
-            barWidth: 2,
-            dotData: FlDotData(show: false),
-            belowBarData: BarAreaData(show: false),
-          )
-        ],
+  @override
+  __NumberFieldState createState() => __NumberFieldState();
+}
+
+class __NumberFieldState extends State<_NumberField> {
+  late TextEditingController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = TextEditingController(text: widget.initial.toString());
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: _ctrl,
+      keyboardType: TextInputType.numberWithOptions(decimal: true),
+      decoration: InputDecoration(
+        labelText: widget.label,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+        isDense: true,
       ),
+      onChanged: (s) {
+        final v = double.tryParse(s);
+        widget.onChanged(v);
+      },
     );
   }
+}
+
+// Small helper to render a compact line chart for mini previews
+Widget _miniChartForData(
+  List<SensorData> data,
+  Color color,
+  String label,
+  String chartType,
+) {
+  if (data.isEmpty) {
+    return Center(
+      child: Text('No data', style: TextStyle(color: Colors.grey[600])),
+    );
+  }
+
+  List<FlSpot> spots = [];
+  for (int i = 0; i < data.length; i++) {
+    final d = data[i];
+    final x = i.toDouble();
+    double y;
+    switch (chartType) {
+      case 'ph':
+        y = d.phLevel;
+        break;
+      case 'oxygen':
+        y = d.oxygen;
+        break;
+      default:
+        y = d.temperature;
+    }
+    spots.add(FlSpot(x, y));
+  }
+
+  return LineChart(
+    LineChartData(
+      gridData: FlGridData(show: false),
+      titlesData: FlTitlesData(show: false),
+      borderData: FlBorderData(show: false),
+      minX: 0,
+      maxX: data.length > 1 ? (data.length - 1).toDouble() : 1,
+      lineBarsData: [
+        LineChartBarData(
+          spots: spots,
+          isCurved: true,
+          color: color,
+          barWidth: 2,
+          dotData: FlDotData(show: false),
+          belowBarData: BarAreaData(show: false),
+        ),
+      ],
+    ),
+  );
+}
+
+// Show a modal dialog forcing the user to submit a report before continuing
+void _showMandatoryReportDialog(
+  BuildContext ctx,
+  userProfile,
+  ReportProvider rp,
+) {
+  showDialog(
+    barrierDismissible: false,
+    context: ctx,
+    builder: (dctx) {
+      // Local, self-contained defaults so this helper can be used outside the State scope
+      double t = 0.0;
+      double p = 7.0;
+      double o = 5.0;
+      const Color localPrimary = Color.fromARGB(255, 57, 73, 171);
+
+      return AlertDialog(
+        title: Text('Laporan Wajib'),
+        content: SingleChildScrollView(
+          child: Column(
+            children: [
+              Text('Anda diwajibkan mengirim laporan setiap 1 jam sekali.'),
+              SizedBox(height: 12),
+              _NumberField(
+                label: 'Suhu (°C)',
+                initial: t,
+                onChanged: (v) => t = v ?? t,
+              ),
+              SizedBox(height: 8),
+              _NumberField(
+                label: 'pH',
+                initial: p,
+                onChanged: (v) => p = v ?? p,
+              ),
+              SizedBox(height: 8),
+              _NumberField(
+                label: 'Oksigen',
+                initial: o,
+                onChanged: (v) => o = v ?? o,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: Colors.black,
+            ),
+            onPressed: () async {
+              final user = Provider.of<AuthProvider>(
+                ctx,
+                listen: false,
+              ).userProfile;
+              if (user == null) return;
+              final report = Report(
+                userId: user.uid,
+                userName: user.name,
+                pondId: user.pondId ?? 'unknown',
+                timestamp: DateTime.now().toUtc(),
+                temperature: t,
+                ph: p,
+                oxygen: o,
+              );
+
+              final ok = await rp.submitReport(report);
+              if (ok)
+                Navigator.of(dctx).pop();
+              else {
+                ScaffoldMessenger.of(ctx).showSnackBar(
+                  SnackBar(
+                    content: Text(rp.errorMessage ?? 'Gagal mengirim laporan'),
+                  ),
+                );
+              }
+            },
+            child: Text('Kirim'),
+          ),
+        ],
+      );
+    },
+  );
+}

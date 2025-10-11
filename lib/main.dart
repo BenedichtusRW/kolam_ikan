@@ -8,6 +8,7 @@ import 'firebase_options.dart';
 import 'providers/auth_provider.dart';
 import 'providers/dashboard_provider.dart';
 import 'providers/history_provider.dart';
+import 'providers/report_provider.dart';
 
 // Utils
 import 'utils/routes.dart';
@@ -15,12 +16,10 @@ import 'package:flutter/foundation.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Initialize Firebase
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-  
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
   runApp(const MyApp());
 }
 
@@ -34,6 +33,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => DashboardProvider()),
         ChangeNotifierProvider(create: (_) => HistoryProvider()),
+        ChangeNotifierProvider(create: (_) => ReportProvider()),
       ],
       child: MaterialApp(
         title: 'Kolam Ikan Monitor',
@@ -50,10 +50,7 @@ class MyApp extends StatelessWidget {
         theme: ThemeData(
           primarySwatch: Colors.blue,
           visualDensity: VisualDensity.adaptivePlatformDensity,
-          appBarTheme: AppBarTheme(
-            elevation: 0,
-            centerTitle: true,
-          ),
+          appBarTheme: AppBarTheme(elevation: 0, centerTitle: true),
           cardTheme: CardThemeData(
             elevation: 4,
             shape: RoundedRectangleBorder(
@@ -74,4 +71,4 @@ class MyApp extends StatelessWidget {
       ),
     );
   }
-} 
+}

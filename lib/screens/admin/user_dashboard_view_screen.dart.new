@@ -1,0 +1,13 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'dart:typed_data';
+import 'dart:convert';
+import '../../services/export_service.dart';
+
+// Temporary new admin dashboard file; will replace the broken one after verification.
+class AdminDashboardReplacement extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(body: Center(child: Text('Admin replacement')));
+  }
+}

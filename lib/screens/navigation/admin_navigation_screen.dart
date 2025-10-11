@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-import '../dashboard/admin_dashboard_screen.dart';
+import '../admin/user_dashboard_view_screen.dart';
 import '../history/history_screen.dart';
 import '../profile/profile_screen.dart';
 
 class AdminMainNavigationScreen extends StatefulWidget {
   @override
-  _AdminMainNavigationScreenState createState() => _AdminMainNavigationScreenState();
+  _AdminMainNavigationScreenState createState() =>
+      _AdminMainNavigationScreenState();
 }
 
 class _AdminMainNavigationScreenState extends State<AdminMainNavigationScreen> {
@@ -28,7 +29,7 @@ class _AdminMainNavigationScreenState extends State<AdminMainNavigationScreen> {
     setState(() {
       _currentIndex = index;
     });
-    
+
     if (_pageController.hasClients) {
       _pageController.animateToPage(
         index,
@@ -49,9 +50,9 @@ class _AdminMainNavigationScreenState extends State<AdminMainNavigationScreen> {
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 800;
 
-    // List of screens for admin
+    // List of screens for admin (use new admin dashboard view)
     final screens = [
-      AdminDashboardScreen(),
+      UserDashboardViewScreen(),
       HistoryScreen(),
       ProfileScreen(),
     ];
@@ -124,7 +125,11 @@ class _AdminMainNavigationScreenState extends State<AdminMainNavigationScreen> {
                     padding: EdgeInsets.all(20),
                     child: Row(
                       children: [
-                        Icon(Icons.water_drop, color: const Color.fromARGB(255, 57, 73, 171), size: 32),
+                        Icon(
+                          Icons.water_drop,
+                          color: const Color.fromARGB(255, 57, 73, 171),
+                          size: 32,
+                        ),
                         SizedBox(width: 12),
                         Text(
                           'Admin Panel',
@@ -141,7 +146,10 @@ class _AdminMainNavigationScreenState extends State<AdminMainNavigationScreen> {
                   // Navigation items
                   Expanded(
                     child: ListView(
-                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
                       children: [
                         _buildNavItem(
                           icon: Icons.dashboard_outlined,
@@ -171,14 +179,9 @@ class _AdminMainNavigationScreenState extends State<AdminMainNavigationScreen> {
               ),
             ),
             // Vertical divider
-            Container(
-              width: 1,
-              color: Colors.grey[300],
-            ),
+            Container(width: 1, color: Colors.grey[300]),
             // Main content
-            Expanded(
-              child: screens[_currentIndex],
-            ),
+            Expanded(child: screens[_currentIndex]),
           ],
         ),
       );
@@ -193,16 +196,18 @@ class _AdminMainNavigationScreenState extends State<AdminMainNavigationScreen> {
     required bool isMobile,
   }) {
     final isActive = _currentIndex == index;
-    
+
     return GestureDetector(
       onTap: () => _onTabTapped(index),
       child: Container(
         margin: isMobile ? EdgeInsets.zero : EdgeInsets.symmetric(vertical: 2),
-        padding: isMobile 
+        padding: isMobile
             ? EdgeInsets.symmetric(horizontal: 16, vertical: 8)
             : EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: isActive ? const Color.fromARGB(255, 57, 73, 171) : Colors.transparent,
+          color: isActive
+              ? const Color.fromARGB(255, 57, 73, 171)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(isMobile ? 20 : 8),
         ),
         child: Row(

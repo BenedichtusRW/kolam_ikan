@@ -8,6 +8,7 @@ import '../screens/navigation/admin_main_navigation_screen.dart';
 import '../screens/dashboard/user_web_dashboard_screen.dart';
 import '../screens/history/history_screen.dart';
 import '../screens/settings/control_settings_screen.dart';
+import '../screens/admin/reports_admin_screen.dart';
 import '../providers/auth_provider.dart';
 
 class Routes {
@@ -18,6 +19,7 @@ class Routes {
   static const String userDashboard = '/user-dashboard';
   static const String adminDashboard = '/admin-dashboard';
   static const String history = '/history';
+  static const String adminReports = '/admin-reports';
   static const String controlSettings = '/control-settings';
 
   // Generate routes
@@ -34,7 +36,7 @@ class Routes {
                   // Admin users get the same navigation interface
                   return AdminMainNavigationScreen();
                 } else {
-                  // Regular users get different interface based on platform  
+                  // Regular users get different interface based on platform
                   if (kIsWeb) {
                     return UserWebDashboardScreen();
                   } else {
@@ -78,6 +80,12 @@ class Routes {
           settings: settings,
         );
 
+      case adminReports:
+        return MaterialPageRoute(
+          builder: (_) => ReportsAdminScreen(),
+          settings: settings,
+        );
+
       case controlSettings:
         return MaterialPageRoute(
           builder: (_) => ControlSettingsScreen(),
@@ -87,9 +95,7 @@ class Routes {
       default:
         return MaterialPageRoute(
           builder: (_) => Scaffold(
-            body: Center(
-              child: Text('Page not found: ${settings.name}'),
-            ),
+            body: Center(child: Text('Page not found: ${settings.name}')),
           ),
         );
     }

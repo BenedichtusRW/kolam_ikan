@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -7,7 +6,6 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:excel/excel.dart' as excel_pkg;
 import '../utils/mock_data_generator.dart';
-import '../models/sensor_data.dart';
 
 class ExportService {
   // Save bytes to Downloads (Android) when possible, otherwise to app documents.

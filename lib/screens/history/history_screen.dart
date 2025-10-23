@@ -851,6 +851,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
     HistoryProvider provider, {
     List<String>? pondIdsOverride,
   }) async {
+    if (!mounted) return;
+    final scaffoldContext = context;
     try {
       _showProgressSnackBar('Membuat laporan PDF...');
 
@@ -929,10 +931,18 @@ class _HistoryScreenState extends State<HistoryScreen> {
           },
         );
       } else {
-        _showErrorSnackBar('Gagal menyimpan PDF. Periksa izin penyimpanan.');
+        if (!mounted) return;
+        ScaffoldMessenger.of(scaffoldContext).showSnackBar(
+          SnackBar(
+            content: Text('Gagal menyimpan PDF. Periksa izin penyimpanan.'),
+          ),
+        );
       }
     } catch (e) {
-      _showErrorSnackBar('Gagal membuat PDF: ${e.toString()}');
+      if (!mounted) return;
+      ScaffoldMessenger.of(scaffoldContext).showSnackBar(
+        SnackBar(content: Text('Gagal membuat PDF: ${e.toString()}')),
+      );
     }
   }
 
@@ -941,8 +951,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
     List<String>? pondIdsOverride,
   }) async {
     try {
+      if (!mounted) return;
+      final scaffoldContext = context;
       _showProgressSnackBar('Membuat laporan Excel...');
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final authProvider = Provider.of<AuthProvider>(
+        scaffoldContext,
+        listen: false,
+      );
       List<String> pondIdsToExport;
       if (pondIdsOverride != null) {
         pondIdsToExport = pondIdsOverride;
@@ -1363,7 +1378,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
             ),
             belowBarData: BarAreaData(
               show: true,
-              color: lineColor.withOpacity(0.1),
+              color: lineColor.withAlpha(26),
             ),
           ),
         ],
@@ -1508,7 +1523,6 @@ void _showMandatoryReportDialog(
       double t = 0.0;
       double p = 7.0;
       double o = 5.0;
-      const Color localPrimary = Color.fromARGB(255, 57, 73, 171);
 
       return AlertDialog(
         title: Text('Laporan Wajib'),
